@@ -6,13 +6,13 @@
 ASweetDreamsDialogueManager::ASweetDreamsDialogueManager()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	USceneComponent* DialogueManager = CreateDefaultSubobject<USceneComponent>(TEXT("Cameras"));
+	USceneComponent* DialogueManager = CreateDefaultSubobject<USceneComponent>(TEXT("Dialogue Manager"));
 	DialogueManager->SetupAttachment(RootComponent);
 
-	USceneComponent* CameraGroup = CreateDefaultSubobject<USceneComponent>(TEXT("Cameras"));
+	USceneComponent* CameraGroup = CreateDefaultSubobject<USceneComponent>(TEXT("Camera Root"));
 	CameraGroup->SetupAttachment(DialogueManager);
 
-	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("PrimaryCamera"));
+	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("Primary Camera"));
 	CameraComponent->SetupAttachment(CameraGroup);
 
 	MulticameraComponent = CreateDefaultSubobject<UMulticameraComponent>(TEXT("Multicamera Component"));
@@ -83,8 +83,4 @@ void ASweetDreamsDialogueManager::AddDialogueToLog(int32 DialogueID)
 {
 	FText LogText = Dialogue[DialogueID].DialogueBody;
 	FText LogName = Dialogue[DialogueID].DialogueName;
-	FSweetDreamsDialogueLog NewLog;
-	NewLog.DialogueBody = LogText;
-	NewLog.DialogueName = LogName;
-	DialogueLog.AddUnique(NewLog);
 }
