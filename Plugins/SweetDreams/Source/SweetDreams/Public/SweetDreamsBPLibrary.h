@@ -4,7 +4,6 @@
 
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "SweetDreamsCore.h"
-#include "SweetDreamsGameMode.h"
 #include "SweetDreamsBPLibrary.generated.h"
 
 class USweetDreamsCore;
@@ -39,6 +38,9 @@ public:
 
 	UFUNCTION(meta = (WorldContext = "WorldContextObject"))
 	static USweetDreamsCore* GetSweetDreamsCore(const UObject* WorldContextObject);
+
+	UFUNCTION(meta = (WorldContext = "WorldContextObject"))
+	static ASweetDreamsGameMode* GetSweetDreamsGameMode(const UObject* WorldContextObject);
 
 	static USweetDreamsCore* CoreLib;
 };

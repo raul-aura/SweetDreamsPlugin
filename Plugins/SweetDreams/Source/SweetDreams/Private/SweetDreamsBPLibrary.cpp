@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "SweetDreamsBPLibrary.h"
+#include "SweetDreamsGameMode.h"
 #include "Kismet/GameplayStatics.h"
 #include "SweetDreams.h"
 
@@ -21,6 +22,16 @@ USweetDreamsCore* USweetDreamsBPLibrary::GetSweetDreamsCore(const UObject* World
 		}
 	}
 	return CoreLib;
+}
+
+ASweetDreamsGameMode* USweetDreamsBPLibrary::GetSweetDreamsGameMode(const UObject* WorldContextObject)
+{
+	if (!WorldContextObject) return nullptr;
+
+	UWorld* World = WorldContextObject->GetWorld();
+	if (!World) return nullptr;
+
+	return Cast<ASweetDreamsGameMode>(UGameplayStatics::GetGameMode(World));
 }
 
 void USweetDreamsBPLibrary::PrintDream(UObject* DreamOrigin, FString Dream, EPrintType Severity, float Duration)

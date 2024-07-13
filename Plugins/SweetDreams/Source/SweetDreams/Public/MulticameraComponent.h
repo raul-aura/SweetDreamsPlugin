@@ -20,15 +20,6 @@ protected:
 	
 	void FindAllCameras();
 	void UpdateCameras();
-	
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Star|Camera", meta = (ToolTip = "Overrides the primary camera that will be active and act as a view target. This camera will be the one receiving the settings from secondary cameras upon transfer."))
-	void DefinePrimaryCamera(UCameraComponent* NewPrimaryCamera);
-
-	//
-	/* @param CameraToMatch Camera Component to get settings and transfer to primary camera. Function won't happen if this input is null.
-	*/
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Star|Camera", meta = (ToolTip = "Transfer the properties of the camera to match to the primary camera."))
-	void TransferCameraProperties(UCameraComponent* CameraToMatch, float blendTime = 1.0f, bool transferFieldOfView = true, bool transferPostProcess = true);
 
 	// COMPONENTS
 	TArray<UCameraComponent*> AuxCameras;
@@ -55,4 +46,13 @@ protected:
 
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Star|Camera", meta = (ToolTip = "Overrides the primary camera that will be active and act as a view target. This camera will be the one receiving the settings from secondary cameras upon transfer."))
+	void DefinePrimaryCamera(UCameraComponent* NewPrimaryCamera);
+
+	//
+/* @param CameraToMatch Camera Component to get settings and transfer to primary camera. Function won't happen if this input is null.
+*/
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Star|Camera", meta = (ToolTip = "Transfer the properties of the camera to match to the primary camera."))
+	void TransferCameraProperties(UCameraComponent* CameraToMatch, float blendTime = 1.0f, bool transferFieldOfView = true, bool transferPostProcess = true);
 };

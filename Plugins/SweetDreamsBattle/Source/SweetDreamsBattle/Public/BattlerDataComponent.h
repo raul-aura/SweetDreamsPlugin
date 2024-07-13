@@ -7,7 +7,7 @@
 #include "BattlerDataComponent.generated.h"
 
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup = ("SweetDreams"), meta = (BlueprintSpawnableComponent))
 class SWEETDREAMSBATTLE_API UBattlerDataComponent : public UActorComponent
 {
 	GENERATED_BODY()

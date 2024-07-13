@@ -26,6 +26,7 @@ public class SweetDreamsBattle : ModuleRules
 			new string[]
 			{
 				"Core",
+				"SweetDreams",
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);

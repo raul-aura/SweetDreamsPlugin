@@ -70,6 +70,7 @@ void ADreamStateAwakeUI::StartState_Implementation()
 		Player->SetShowMouseCursor(true);
 		FInputModeUIOnly ModeUI;
 		Player->SetInputMode(ModeUI);
+		Player->StopMovement();
 	}
 }
 

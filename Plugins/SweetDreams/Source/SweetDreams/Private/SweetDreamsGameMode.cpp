@@ -2,6 +2,7 @@
 
 
 #include "SweetDreamsGameMode.h"
+#include "SweetDreamsBPLibrary.h"
 
 void ASweetDreamsGameMode::BeginPlay()
 {

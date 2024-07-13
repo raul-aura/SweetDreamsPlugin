@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SweetDreamsSaveFile.h"
 #include "SweetDreamsSavePersistent.h"
 #include "SweetDreamsSaveLocal.h"
 #include "SweetDreamsSettings.h"
@@ -11,6 +10,8 @@
 #include "Engine/Engine.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "SweetDreamsCore.generated.h"
+
+class USweetDreamsSave;
 
 UENUM(BlueprintType)
 enum class EPrintType : uint8
