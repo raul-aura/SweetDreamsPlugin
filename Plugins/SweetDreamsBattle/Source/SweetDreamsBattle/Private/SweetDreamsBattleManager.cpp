@@ -7,14 +7,8 @@
 ASweetDreamsBattleManager::ASweetDreamsBattleManager()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	USceneComponent* BattleRoot = CreateDefaultSubobject<USceneComponent>(TEXT("Battle Manager"));
+	BattleRoot = CreateDefaultSubobject<USceneComponent>(TEXT("Battle Manager"));
 	BattleRoot->SetupAttachment(RootComponent);
-
-	PlayerRoot = CreateDefaultSubobject<USceneComponent>(TEXT("Players"));
-	PlayerRoot->SetupAttachment(BattleRoot);
-
-	EnemyRoot = CreateDefaultSubobject<USceneComponent>(TEXT("Enemies"));
-	EnemyRoot->SetupAttachment(BattleRoot);
 
 	BattleCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Battle Camera"));
 	BattleCamera->SetupAttachment(BattleRoot);
@@ -26,13 +20,14 @@ ASweetDreamsBattleManager::ASweetDreamsBattleManager()
 void ASweetDreamsBattleManager::BeginPlay()
 {
 	Super::BeginPlay();
-	MulticameraComponent->DefinePrimaryCamera(BattleCamera);
-	PlayerRoot->GetChildrenComponents(true, PlayerLocations);
-	EnemyRoot->GetChildrenComponents(true, EnemiesLocations);
-	BattleWidget = CreateWidget(this, BattleWidgetClass);
+	if (UWorld* World = GetWorld())
+	{
+		BattleWidget = CreateWidget<UUserWidget>(World, BattleWidgetClass);
+	}
 	if (BattleWidget)
 	{
 		BattleWidget->SetVisibility(ESlateVisibility::Collapsed);
+		BattleWidget->AddToViewport();
 	}
 }
 
@@ -47,18 +42,18 @@ bool ASweetDreamsBattleManager::IsBattleOngoing() const
 	return IsBattleActive;
 }
 
-void ASweetDreamsBattleManager::StartBattle(FName State, float blendTime)
+void ASweetDreamsBattleManager::StartBattle(FName State, float BlendTime)
 {
 	IsBattleActive = true;
 	ASweetDreamsGameMode* GameMode = Cast<ASweetDreamsGameMode>(UGameplayStatics::GetGameMode(this));
-	if (GameMode)
+	if (GameMode && State != "None")
 	{
 		GameMode->StartState(GameMode->GetStateByName(State));
 	}
 	if (APlayerController* Player = UGameplayStatics::GetPlayerController(this, 0))
 	{
 		Player->StopMovement();
-		Player->SetViewTargetWithBlend(this, blendTime);
+		Player->SetViewTargetWithBlend(this, BlendTime);
 	}
 	if (BattleWidget)
 	{
@@ -66,11 +61,11 @@ void ASweetDreamsBattleManager::StartBattle(FName State, float blendTime)
 	}
 }
 
-void ASweetDreamsBattleManager::EndBattle(FName State, float blendTime)
+void ASweetDreamsBattleManager::EndBattle(FName State, float BlendTime)
 {
 	IsBattleActive = false;
 	ASweetDreamsGameMode* GameMode = Cast<ASweetDreamsGameMode>(UGameplayStatics::GetGameMode(this));
-	if (GameMode)
+	if (GameMode && State != "None")
 	{
 		GameMode->StartState(GameMode->GetStateByName(State));
 	}
@@ -78,7 +73,7 @@ void ASweetDreamsBattleManager::EndBattle(FName State, float blendTime)
 	{
 		if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0))
 		{
-			Player->SetViewTargetWithBlend(PlayerPawn, blendTime);
+			Player->SetViewTargetWithBlend(PlayerPawn, BlendTime);
 		}
 	}
 	if (BattleWidget)
@@ -86,4 +81,6 @@ void ASweetDreamsBattleManager::EndBattle(FName State, float blendTime)
 		BattleWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }
+
+void ASweetDreamsBattleManager::EvaluateEndBattle() {}
 

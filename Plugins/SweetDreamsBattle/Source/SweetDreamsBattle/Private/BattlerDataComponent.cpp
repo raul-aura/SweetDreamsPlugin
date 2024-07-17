@@ -3,14 +3,11 @@
 
 #include "BattlerDataComponent.h"
 
-// Sets default values for this component's properties
 UBattlerDataComponent::UBattlerDataComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
-	// ...
+	
 }
 
 
@@ -19,16 +16,40 @@ void UBattlerDataComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
 	
 }
 
 
-// Called every frame
 void UBattlerDataComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
+}
+
+float UBattlerDataComponent::GetModifiers(TArray<float> Modifiers, float BaseMultiplier) const
+{
+	float Multiplier = 0;
+	Modifiers.Add(BaseMultiplier);
+	for (float Modifier : Modifiers)
+	{
+		Multiplier += Modifier;
+	}
+	Multiplier = FMath::Max(Multiplier, 0.0f);
+	return Multiplier / 100;
+}
+
+float UBattlerDataComponent::GetHealth() const
+{
+	return Health * GetModifiers(HealthModifiers, HealthMultiplier);
+}
+
+float UBattlerDataComponent::GetForce() const
+{
+	return Force * GetModifiers(ForceModifiers, ForceMultiplier);
+}
+
+float UBattlerDataComponent::GetResistence() const
+{
+	return Resistence * GetModifiers(ResistenceModifiers, ResistenceMultiplier);
 }
 

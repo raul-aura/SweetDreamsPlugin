@@ -12,8 +12,8 @@ UMulticameraComponent::UMulticameraComponent()
 
 void UMulticameraComponent::BeginPlay()
 {
-	DefinePrimaryCamera(nullptr);
 	Super::BeginPlay();
+	FindCamera();
 }
 
 void UMulticameraComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -21,47 +21,38 @@ void UMulticameraComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
-void UMulticameraComponent::TransferCameraProperties(UCameraComponent* CameraToMatch, float blendTime, bool transferFieldOfView, bool transferPostProcess)
+void UMulticameraComponent::TransferCameraProperties(int32 CameraToMatch, float BlendTime)
 {
-	if (AuxCameras.Contains(PrimaryCamera))
+	if (Locations.Num() == 0 || Rotations.Num() == 0)
 	{
 		return;
 	}
-	else if (!CameraToMatch)
+	if (BlendTime <= 0.0f)
 	{
-		return;
+		BlendTime = 0.01f;
 	}
-	if (blendTime <= 0.0f)
-	{
-		blendTime = 0.01f;
-	}
-	TargetCamera = CameraToMatch;
-	StartLocation = PrimaryCamera->GetRelativeLocation();
-	StartRotation = PrimaryCamera->GetRelativeRotation();
-	StartFOV = PrimaryCamera->FieldOfView;
-	EndLocation = TargetCamera->GetRelativeLocation();
-	EndRotation = TargetCamera->GetRelativeRotation();
-	EndFOV = TargetCamera->FieldOfView;
-	EndPostProcess = TargetCamera->PostProcessSettings;
-	bCanTransferFov = transferFieldOfView;
-	bCanTransferPostProcess = transferPostProcess;
+	StartLocation = ActiveCamera->GetRelativeLocation();
+	StartRotation = ActiveCamera->GetRelativeRotation();
+	EndLocation = Locations[CameraToMatch];
+	EndRotation = Rotations[CameraToMatch];
 	BlendElapsedTime = 0.0f;
-	BlendTotalTime = blendTime;
+	BlendTotalTime = BlendTime;
 	GetOwner()->GetWorldTimerManager().SetTimer(BlendHandle, this, &UMulticameraComponent::UpdateCameras, 0.01f, true);
 }
 
-void UMulticameraComponent::FindAllCameras() 
+void UMulticameraComponent::SetActiveCamera(UCameraComponent* NewCamera)
 {
-	GetOwner()->GetComponents<UCameraComponent>(AuxCameras);
-	for (UCameraComponent* Camera : AuxCameras)
-	{
-		Camera->SetActive(false);
-	}
+	ActiveCamera = NewCamera;
+}
+
+void UMulticameraComponent::FindCamera() 
+{
+	ActiveCamera = GetOwner()->FindComponentByClass<UCameraComponent>();
 }
 
 void UMulticameraComponent::UpdateCameras()
 {
-	if (!PrimaryCamera || !TargetCamera || BlendTotalTime <= 0.0f)
+	if (BlendTotalTime <= 0.0f)
 	{
 		return;
 	}
@@ -69,30 +60,9 @@ void UMulticameraComponent::UpdateCameras()
 	float BlendAlpha = FMath::Clamp(BlendElapsedTime / BlendTotalTime, 0.0f, 1.0f);
 	FVector NewLocation = FMath::Lerp(StartLocation, EndLocation, BlendAlpha);
 	FRotator NewRotation = FMath::Lerp(StartRotation, EndRotation, BlendAlpha);
-	float NewFOV = FMath::Lerp(StartFOV, EndFOV, BlendAlpha);
-	PrimaryCamera->SetRelativeLocationAndRotation(NewLocation, NewRotation);
-	if (bCanTransferFov)
-	{
-		PrimaryCamera->SetFieldOfView(NewFOV);
-	}
+	ActiveCamera->SetRelativeLocationAndRotation(NewLocation, NewRotation);
 	if (BlendAlpha >= 1.0f) 
 	{
-		if (bCanTransferPostProcess)
-		{
-			PrimaryCamera->PostProcessSettings = EndPostProcess;
-		}
 		GetOwner()->GetWorldTimerManager().ClearTimer(BlendHandle);
 	}
-}
-
-void UMulticameraComponent::DefinePrimaryCamera(UCameraComponent* NewPrimaryCamera)
-{
-	FindAllCameras();
-	if (!NewPrimaryCamera)
-	{
-		NewPrimaryCamera = AuxCameras[0];
-	}
-	AuxCameras.Remove(NewPrimaryCamera);
-	PrimaryCamera = NewPrimaryCamera;
-	PrimaryCamera->SetActive(true);
 }

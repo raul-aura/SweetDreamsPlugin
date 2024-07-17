@@ -33,13 +33,13 @@ class USweetDreamsBPLibrary : public UBlueprintFunctionLibrary
 
 public:
 
-	UFUNCTION(BlueprintCallable, meta = (WorldContext = "DreamOrigin", Keywords = "Print SweetDreams core dream debug string text"), Category = "SweetDreams|Core|DEBUG")
+	UFUNCTION(BlueprintCallable, meta = (WorldContext = "DreamOrigin", Keywords = "Print SweetDreams core dream debug string text", CallableWithoutWorldContext), Category = "SweetDreams|Core|DEBUG")
 	static void PrintDream(UObject* DreamOrigin, FString Dream = "Hello dream.", EPrintType Severity = EPrintType::INFO, float duration = 4.0f);
-
-	UFUNCTION(meta = (WorldContext = "WorldContextObject"))
+	
+	UFUNCTION(meta = (WorldContext = "WorldContextObject", CallableWithoutWorldContext))
 	static USweetDreamsCore* GetSweetDreamsCore(const UObject* WorldContextObject);
 
-	UFUNCTION(meta = (WorldContext = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject", CallableWithoutWorldContext))
 	static ASweetDreamsGameMode* GetSweetDreamsGameMode(const UObject* WorldContextObject);
 
 	static USweetDreamsCore* CoreLib;

@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SweetDreamsCore.h"
 #include "SweetDreamsSaveInterface.h"
 #include "GameFramework/SaveGame.h"
 #include "SweetDreamsSaveFile.generated.h"

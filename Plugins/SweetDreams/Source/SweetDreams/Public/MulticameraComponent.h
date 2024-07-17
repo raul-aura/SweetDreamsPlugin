@@ -18,13 +18,16 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	
-	void FindAllCameras();
+	void FindCamera();
 	void UpdateCameras();
 
+	UPROPERTY(EditAnywhere, Category = "Cameras", meta = (DisplayName = "Camera Locations"))
+	TArray<FVector> Locations;
+	UPROPERTY(EditAnywhere, Category = "Cameras", meta = (DisplayName = "Camera Rotations"))
+	TArray<FRotator> Rotations;
+
 	// COMPONENTS
-	TArray<UCameraComponent*> AuxCameras;
-	UCameraComponent* PrimaryCamera;
-	UCameraComponent* TargetCamera;
+	UCameraComponent* ActiveCamera;
 
 	// BLEND
 	FTimerHandle BlendHandle;
@@ -36,23 +39,14 @@ protected:
 	FVector EndLocation;
 	FRotator StartRotation;
 	FRotator EndRotation;
-	float StartFOV;
-	float EndFOV;
-	FPostProcessSettings EndPostProcess;
-
-	// OPTIONS
-	bool bCanTransferFov;
-	bool bCanTransferPostProcess;
 
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Star|Camera", meta = (ToolTip = "Overrides the primary camera that will be active and act as a view target. This camera will be the one receiving the settings from secondary cameras upon transfer."))
-	void DefinePrimaryCamera(UCameraComponent* NewPrimaryCamera);
-
-	//
-/* @param CameraToMatch Camera Component to get settings and transfer to primary camera. Function won't happen if this input is null.
-*/
+	// @param CameraToMatch Camera Component to get settings and transfer to primary camera. Function won't happen if this input is null.
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Star|Camera", meta = (ToolTip = "Transfer the properties of the camera to match to the primary camera."))
-	void TransferCameraProperties(UCameraComponent* CameraToMatch, float blendTime = 1.0f, bool transferFieldOfView = true, bool transferPostProcess = true);
+	void TransferCameraProperties(int32 CameraToMatch = 0, float BlendTime = 1.0f);
+
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Star|Camera", meta = (ToolTip = "Defines a new camera to be the current one. Ideal when you have multiple cameras."))
+	void SetActiveCamera(UCameraComponent* NewCamera);
 };

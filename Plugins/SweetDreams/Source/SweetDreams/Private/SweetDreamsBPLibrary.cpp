@@ -1,9 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "SweetDreamsBPLibrary.h"
+#include "SweetDreams.h"
 #include "SweetDreamsGameMode.h"
 #include "Kismet/GameplayStatics.h"
-#include "SweetDreams.h"
+#include "Engine/Engine.h"
 
 USweetDreamsCore* USweetDreamsBPLibrary::CoreLib = nullptr;
 

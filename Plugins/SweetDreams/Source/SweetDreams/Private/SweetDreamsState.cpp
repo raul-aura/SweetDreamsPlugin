@@ -66,11 +66,11 @@ void ADreamStateAwakeUI::StartState_Implementation()
 	}
 	if (Player)
 	{
-		DisableInput(Player);
 		Player->SetShowMouseCursor(true);
-		FInputModeUIOnly ModeUI;
-		Player->SetInputMode(ModeUI);
+		FInputModeGameAndUI ModeGameUi;
+		Player->SetInputMode(ModeGameUi);
 		Player->StopMovement();
+		DisableInput(Player);
 	}
 }
 
@@ -89,9 +89,9 @@ void ADreamStateAsleep::StartState_Implementation()
 	}
 	if (Player)
 	{
-		DisableInput(Player);
 		Player->SetShowMouseCursor(true);
 		FInputModeUIOnly ModeUI;
 		Player->SetInputMode(ModeUI);
+		DisableInput(Player);
 	}
 }
