@@ -24,7 +24,10 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	bool IsBattleActive = false;
+	FTimerHandle BattleTimer;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Battle Manager")
+	bool bIsBattleActive = false;
 
 	// COMPONENTS
 	UPROPERTY(VisibleAnywhere, Category = "Components")
@@ -33,30 +36,37 @@ protected:
 	UMulticameraComponent* MulticameraComponent;
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USceneComponent* BattleRoot;
+	UPROPERTY(BlueprintReadOnly, Category = "Battle Manager")
+	APlayerController* Player;
 
 	// UI
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Interface")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Battle Manager|UI")
 	TSubclassOf<UUserWidget> BattleWidgetClass;
 	UPROPERTY(BlueprintReadWrite)
 	UUserWidget* BattleWidget;
 
-	UPROPERTY(BlueprintReadWrite, Category = "Sweet Dreams RPG|Battle")
+	// BATLE
+	UPROPERTY(BlueprintReadWrite, Category = "Battle Manager|Battlers", meta = (DisplayName = "Enemies References"))
 	TArray<ABattleCharacter*> Enemies;
-	UPROPERTY(BlueprintReadWrite, Category = "Sweet Dreams RPG|Battle")
+	UPROPERTY(BlueprintReadWrite, Category = "Battle Manager|Battlers", meta = (DisplayName = "Allies References"))
 	TArray<ABattleCharacter*> Allies;
+	//
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Battle Manager|Camera", meta = (DisplayName = "Battler Camera Blend Time", ClampMin = "0"))
+	float BattlerBlendTime = 1.0f;
 
 public:	
 
 	virtual void Tick(float DeltaTime) override;
 
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
 	virtual void StartBattle(FName State = "None", float BlendTime = 2.0f);
-
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
 	virtual void EndBattle(FName State = "None", float BlendTime = 2.0f);
-
-	virtual void EvaluateEndBattle();
-
+	virtual bool EvaluateEndBattle();
 	bool IsBattleOngoing() const;
-
+	//
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
+	virtual void ChangeCameraFocus(AActor* NewFocus, float BlendTime = 1.0f);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
+	virtual void ChangeCameraFocusDelayed(AActor* NewFocus, float BlendTime = 1.0f, float DelayTime = 1.0f);
 };

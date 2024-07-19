@@ -21,11 +21,11 @@ void ASweetDreamsGameMode::BeginPlay()
 			if (NewState)
 			{
 				DreamStates.Add(NewState);
-				Core->PrintDream(this, FString::Printf(TEXT("%s State CREATED."), *NewState->GetStateName().ToString()));
+				USweetDreamsBPLibrary::PrintDream(this, FString::Printf(TEXT("%s State CREATED."), *NewState->GetStateName().ToString()));
 			}
 			else
 			{
-				Core->PrintDream(this, FString::Printf(TEXT("%s State FAILED to create."), *NewState->GetStateName().ToString()));
+				USweetDreamsBPLibrary::PrintDream(this, FString::Printf(TEXT("%s State FAILED to create."), *NewState->GetStateName().ToString()));
 			}
 		}
 		if (DreamStates.Num() != 0)
@@ -41,6 +41,7 @@ void ASweetDreamsGameMode::BeginPlay()
 		}
 	}
 	GetUserSettingsDelegate.Broadcast(Core->GetUserSettings());
+	Super::BeginPlay();
 }
 
 // STATE
@@ -63,7 +64,7 @@ ASweetDreamsState* ASweetDreamsGameMode::GetStateByName(FName StateName) const
 
 ASweetDreamsState* ASweetDreamsGameMode::GetStateByIndex(int32 Index) const
 {
-	if (DreamStates.Num() != 0)
+	if (DreamStates.Num() != 0 && Index >= 0)
 	{
 		return (DreamStates[Index]) ? DreamStates[Index] : DreamStates[0];
 	}
@@ -72,6 +73,10 @@ ASweetDreamsState* ASweetDreamsGameMode::GetStateByIndex(int32 Index) const
 
 void ASweetDreamsGameMode::StartState(ASweetDreamsState* State)
 {
+	if (!State)
+	{
+		return;
+	}
 	if (CurrentState)
 	{
 		CurrentState->EndState();

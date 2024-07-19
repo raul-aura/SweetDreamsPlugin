@@ -2,6 +2,7 @@
 
 #include "SweetDreamsBattleManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "SweetDreamsGameMode.h"
 
 ASweetDreamsBattleManager::ASweetDreamsBattleManager()
@@ -20,6 +21,7 @@ ASweetDreamsBattleManager::ASweetDreamsBattleManager()
 void ASweetDreamsBattleManager::BeginPlay()
 {
 	Super::BeginPlay();
+	Player = UGameplayStatics::GetPlayerController(this, 0);
 	if (UWorld* World = GetWorld())
 	{
 		BattleWidget = CreateWidget<UUserWidget>(World, BattleWidgetClass);
@@ -37,23 +39,22 @@ void ASweetDreamsBattleManager::Tick(float DeltaTime)
 
 }
 
-bool ASweetDreamsBattleManager::IsBattleOngoing() const
-{
-	return IsBattleActive;
-}
-
 void ASweetDreamsBattleManager::StartBattle(FName State, float BlendTime)
 {
-	IsBattleActive = true;
+	if (bIsBattleActive)
+	{
+		return;
+	}
+	bIsBattleActive = true;
 	ASweetDreamsGameMode* GameMode = Cast<ASweetDreamsGameMode>(UGameplayStatics::GetGameMode(this));
 	if (GameMode && State != "None")
 	{
 		GameMode->StartState(GameMode->GetStateByName(State));
 	}
-	if (APlayerController* Player = UGameplayStatics::GetPlayerController(this, 0))
+	if (Player)
 	{
 		Player->StopMovement();
-		Player->SetViewTargetWithBlend(this, BlendTime);
+		ChangeCameraFocus(this, BlendTime);
 	}
 	if (BattleWidget)
 	{
@@ -63,18 +64,15 @@ void ASweetDreamsBattleManager::StartBattle(FName State, float BlendTime)
 
 void ASweetDreamsBattleManager::EndBattle(FName State, float BlendTime)
 {
-	IsBattleActive = false;
+	bIsBattleActive = false;
 	ASweetDreamsGameMode* GameMode = Cast<ASweetDreamsGameMode>(UGameplayStatics::GetGameMode(this));
 	if (GameMode && State != "None")
 	{
 		GameMode->StartState(GameMode->GetStateByName(State));
 	}
-	if (APlayerController* Player = UGameplayStatics::GetPlayerController(this, 0))
+	if (APawn* PlayerPawn = Player->GetPawn())
 	{
-		if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0))
-		{
-			Player->SetViewTargetWithBlend(PlayerPawn, BlendTime);
-		}
+		ChangeCameraFocus(PlayerPawn, BlendTime);
 	}
 	if (BattleWidget)
 	{
@@ -82,5 +80,30 @@ void ASweetDreamsBattleManager::EndBattle(FName State, float BlendTime)
 	}
 }
 
-void ASweetDreamsBattleManager::EvaluateEndBattle() {}
+bool ASweetDreamsBattleManager::EvaluateEndBattle() { return true; }
+
+bool ASweetDreamsBattleManager::IsBattleOngoing() const
+{
+	return bIsBattleActive;
+}
+
+void ASweetDreamsBattleManager::ChangeCameraFocus(AActor* NewFocus, float BlendTime)
+{
+	if (!Player)
+	{
+		return;
+	}
+	if (BlendTime < 0.0f)
+	{
+		BlendTime = BattlerBlendTime;
+	}
+	Player->SetViewTargetWithBlend(NewFocus, BlendTime);
+}
+
+void ASweetDreamsBattleManager::ChangeCameraFocusDelayed(AActor* NewFocus, float BlendTime, float DelayTime)
+{
+	FTimerDelegate TimerDel;
+	TimerDel.BindUFunction(this, FName("ChangeCameraFocus"), NewFocus, BlendTime);
+	GetWorldTimerManager().SetTimer(BattleTimer, TimerDel, DelayTime, false);
+}
 

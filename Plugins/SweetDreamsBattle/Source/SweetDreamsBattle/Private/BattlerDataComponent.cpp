@@ -6,17 +6,12 @@
 UBattlerDataComponent::UBattlerDataComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-
-	
+	CurrentHealth = Health;
 }
 
-
-// Called when the game starts
 void UBattlerDataComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	
 }
 
 
@@ -38,9 +33,14 @@ float UBattlerDataComponent::GetModifiers(TArray<float> Modifiers, float BaseMul
 	return Multiplier / 100;
 }
 
+ABattleCharacter* UBattlerDataComponent::GetBattlerOwner() const
+{
+	return Cast<ABattleCharacter>(GetOwner());
+}
+
 float UBattlerDataComponent::GetHealth() const
 {
-	return Health * GetModifiers(HealthModifiers, HealthMultiplier);
+	return CurrentHealth * GetModifiers(HealthModifiers, HealthMultiplier);
 }
 
 float UBattlerDataComponent::GetForce() const
@@ -51,5 +51,44 @@ float UBattlerDataComponent::GetForce() const
 float UBattlerDataComponent::GetResistence() const
 {
 	return Resistence * GetModifiers(ResistenceModifiers, ResistenceMultiplier);
+}
+
+float UBattlerDataComponent::ReceiveDamage(float Damage, bool bCanBeMitigated)
+{
+	float FinalDamage = Damage;
+	if (bCanBeMitigated)
+	{
+		GetMitigatedDamage(FinalDamage);
+	}
+	CurrentHealth = FMath::Clamp(CurrentHealth - FinalDamage, 0.0f, Health);
+	if (CurrentHealth <= 0)
+	{
+		CurrentHealth = 0;
+		Kill();
+	}
+	return FinalDamage;
+}
+
+float UBattlerDataComponent::ReceiveHeal(float Heal)
+{
+	float HealedAmount = FMath::Clamp(Heal, 0.0f, (Health - CurrentHealth));
+	CurrentHealth += HealedAmount;
+	return HealedAmount;
+}
+
+void UBattlerDataComponent::GetMitigatedDamage_Implementation(float& Mitigated)
+{
+	Mitigated -= GetResistence();
+	Mitigated = FMath::Max(Mitigated, 0.0f);
+}
+
+void UBattlerDataComponent::Kill_Implementation()
+{
+	bIsDead = true;
+}
+
+bool UBattlerDataComponent::IsDead() const
+{
+	return bIsDead;
 }
 

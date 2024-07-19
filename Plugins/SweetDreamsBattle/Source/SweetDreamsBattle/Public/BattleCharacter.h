@@ -34,7 +34,7 @@ protected:
 
 	// CHARACTER
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Character")
-	FString DisplayName = "Character"; // change to localizable text
+	FText DisplayName = FText::FromString(TEXT("Character")); // change to localizable text
 	// BATTLE
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Battle", meta = (DisplayName = "Actions"))
 	TArray<TSoftClassPtr<UBattleAction>> ActionClasses;
@@ -48,9 +48,9 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Character")
-	virtual FString GetCharacterName() const;
+	virtual FText GetCharacterName() const;
 
-
+	// ACTION
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle")
 	virtual UBattlerDataComponent* GetBattlerParameters() const;
 

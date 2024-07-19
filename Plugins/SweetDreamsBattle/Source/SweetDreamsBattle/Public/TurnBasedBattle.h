@@ -27,17 +27,19 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USceneComponent* EnemyRoot;
 	//
-	UPROPERTY(EditAnywhere, Category = "Battlers", meta = (DisplayName = "Enemies"))
+	UPROPERTY(EditAnywhere, Category = "Battle Manager|Battlers", meta = (DisplayName = "Enemies"))
 	TArray<TSoftClassPtr<ABattleCharacter>> EnemyClasses;
-	UPROPERTY(EditAnywhere, Category = "Battlers")
+	UPROPERTY(EditAnywhere, Category = "Battle Manager|Battlers")
 	TArray<FTransform> EnemyTransforms;
-	UPROPERTY(EditAnywhere, Category = "Battlers", meta = (DisplayName = "Allies", EditCondition = "bGetAlliesFromPlayerController==false", EditConditionHides))
+	UPROPERTY(EditAnywhere, Category = "Battle Manager|Battlers", meta = (DisplayName = "Allies", EditCondition = "bGetAlliesFromPlayerController==false", EditConditionHides))
 	TArray<TSoftClassPtr<ABattleCharacter>> AllyClasses;
-	UPROPERTY(EditAnywhere, Category = "Battlers")
+	UPROPERTY(EditAnywhere, Category = "Battle Manager|Battlers")
 	TArray<FTransform> AllyTransforms;
-	UPROPERTY(EditAnywhere, Category = "Battlers")
+	UPROPERTY(EditAnywhere, Category = "Battle Manager|Battlers")
 	bool bGetAlliesFromPlayerController = true;
-
+	// 
+	UPROPERTY(EditAnywhere, Category = "Battle Manager|Camera", meta = (DisplayName = "Turn Input Start Delay", ClampMin = "0"))
+	float TurnCameraDelay = 1.0f;
 	// ACTION
 	TArray<UBattleAction*> Actions;
 	TArray<int32> ActionOrder;
@@ -51,36 +53,36 @@ protected:
 	UBattleAction* AllySelectedAction;
 
 	// TURN-ACTION ORDER
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG | Battle | Turn-based")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
 	virtual void InitializeTurn();
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG | Battle | Turn-based")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
 	virtual void EvaluateTurnStart();
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG | Battle | Turn-based")
-	virtual void EvaluateEndBattle() override;
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
+	virtual bool EvaluateEndBattle() override;
 
 public:
 	// BATTLE
 	virtual void StartBattle(FName State = "None", float BlendTime = 2.0f) override;
 	virtual void EndBattle(FName State = "None", float BlendTime = 2.0f) override;
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG | Battle | Turn-based", meta = (DisplayName = "Load and Spawn Battlers"))
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based", meta = (DisplayName = "Load and Spawn Battlers"))
 	virtual void LoadSpawnBattlers(TArray<TSoftClassPtr<ABattleCharacter>> Battlers, TArray<ABattleCharacter*>& BattlerGroup, TArray<FTransform> TransformGroup);
 
 	// ACTION
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG | Battle | Turn-based")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
 	virtual void AllyInputStart(ABattleCharacter* Ally = nullptr);
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG | Battle | Turn-based")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
 	virtual void AllySelectAction(UBattleAction* Action);
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG | Battle | Turn-based")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
 	virtual void AllySelectTargets(ABattleCharacter* Target);
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG | Battle | Turn-based")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
 	virtual void AllyActionConfirm();
 	// GETTERS
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG | Battle | Turn-based")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
 	virtual ABattleCharacter* GetCurrentInputAlly() const;
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG | Battle | Turn-based")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
 	virtual TArray<ABattleCharacter*> GetPossibleTargets() const;
 	// TURN-ACTION ORDER
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG | Battle | Turn-based")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
 	virtual void StartActionInOrder();
 
 

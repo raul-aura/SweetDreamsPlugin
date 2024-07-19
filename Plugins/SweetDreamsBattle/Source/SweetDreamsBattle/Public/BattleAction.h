@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "TimerManager.h"
-#include "BattleCharacter.h"
 #include "BattleElement.h"
 #include "BattleAction.generated.h"
 
@@ -26,9 +25,7 @@ class SWEETDREAMSBATTLE_API UBattleAction : public UBattleElement
 public:
 	// ACTION CONTROL
 	UFUNCTION(BlueprintImplementableEvent)
-	void StartAction();
-	void UpdateTimer(float Delay);
-	virtual void EndAction();
+	void OnActionStart();
 
 	// OWNERSHIP & TARGET
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action")
@@ -40,25 +37,29 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action|Target")
 	virtual bool GetIfIncludeSelf() const;
 
-	// BATTLE FUNCTIONS
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action")
-	virtual void ActionDelay(float DelayTime = 1.0f);
-
 protected:
+	// ACTION CONTROL
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnActionEnd();
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action")
+	virtual void EndAction(float Delay = 1.0f);
+	void UpdateTimer(float Delay);
+	//
 	FTimerHandle ActionTimer;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Action", meta = (DisplayName = "Targets"))
+	//
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Action", meta = (DisplayName = "Targets"))
 	ETargetType TargetType = ETargetType::Ally;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Action", meta = (EditCondition = "TargetType==ETargetType::Ally"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Action", meta = (EditCondition = "TargetType==ETargetType::Ally"))
 	bool bIncludeSelf = true;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Action", meta = (ClampMin = "0"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Action", meta = (ClampMin = "0"))
 	int32 TargetAmount = 1;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Data", meta = (ClampMin = "0", ClampMax = "1"))
+	//
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Data", meta = (ClampMin = "0"))
+	float Cost = 100; // create function to get cost and see if have enough to use
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Data", meta = (ClampMin = "0", ClampMax = "1"))
 	float PriorityWeigth = 1; // create weighted priority when Randomizing Action
-
-	//add functions to deal damage, heal, add/remove state, change camera, focus on target, call animation 
-
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Turn-Based Battle")
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Sweet Dreams RPG|Settings")
 	bool bTurnBasedAction = false;
+	//add functions to deal damage, heal, add/remove state, change camera, focus on target, call animation 
+	
 };

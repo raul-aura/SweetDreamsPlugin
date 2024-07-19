@@ -6,6 +6,9 @@
 ABattleCharacter::ABattleCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->TargetArmLength = 300.0f; 
@@ -61,7 +64,7 @@ void ABattleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 }
 
-FString ABattleCharacter::GetCharacterName() const
+FText ABattleCharacter::GetCharacterName() const
 {
 	return DisplayName;
 }
