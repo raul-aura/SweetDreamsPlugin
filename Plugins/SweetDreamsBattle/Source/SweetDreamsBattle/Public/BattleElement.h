@@ -36,6 +36,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
 	virtual void AddTarget(ABattleCharacter* Target);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
+	virtual void RemoveTarget(ABattleCharacter* Target);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
 	virtual void SetTarget(TArray<ABattleCharacter*> NewTargets);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
 	virtual void SetTargetRandom(TArray<ABattleCharacter*> PossibleTargets, int32 TargetAmount);

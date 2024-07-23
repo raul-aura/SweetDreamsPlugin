@@ -63,15 +63,17 @@ void UMulticameraComponent::CameraBlend()
 		return;
 	}
 	BlendElapsedTime += GetWorld()->GetDeltaSeconds();
+	float BlendAlpha = FMath::Clamp(BlendElapsedTime / BlendTotalTime, 0.0f, 1.0f);
 	if (AlphaCurve)
 	{
 		if (AlphaCurve->FloatCurve.GetNumKeys() > 0)
 		{
-			AlphaMultiplier = AlphaCurve->GetFloatValue(BlendElapsedTime);
+			float CurveMin, CurveMax;
+			AlphaCurve->GetTimeRange(CurveMin, CurveMax);
+			float CurveAlpha = FMath::Lerp(CurveMin, CurveMax, BlendAlpha);
+			BlendAlpha = AlphaCurve->GetFloatValue(CurveAlpha);
 		}
 	}
-	float BlendAlpha = FMath::Clamp(BlendElapsedTime / BlendTotalTime, 0.0f, 1.0f);
-	BlendAlpha *= AlphaMultiplier;
 	FVector NewLocation = FMath::Lerp(StartLocation, EndLocation, BlendAlpha);
 	FRotator NewRotation = FMath::Lerp(StartRotation, EndRotation, BlendAlpha);
 	ActiveCamera->SetRelativeLocationAndRotation(NewLocation, NewRotation);

@@ -27,7 +27,18 @@ void UBattleElement::SetBattle(ASweetDreamsBattleManager* Battle)
 
 void UBattleElement::AddTarget(ABattleCharacter* Target)
 {
-	ElementTargets.Add(Target);
+	if (!ElementTargets.Contains(Target))
+	{
+		ElementTargets.Add(Target);
+	}
+}
+
+void UBattleElement::RemoveTarget(ABattleCharacter* Target)
+{
+	if (ElementTargets.Contains(Target))
+	{
+		ElementTargets.Remove(Target);
+	}
 }
 
 void UBattleElement::SetTarget(TArray<ABattleCharacter*> NewTargets)

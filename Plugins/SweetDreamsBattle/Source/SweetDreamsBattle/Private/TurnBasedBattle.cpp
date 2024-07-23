@@ -95,7 +95,7 @@ void ATurnBasedBattle::InitializeTurn() // resets actions to initialize turn
 	FTimerHandle LocalHandle;
 	FTimerDelegate TimerDel;
 	TimerDel.BindUFunction(this, FName("AllyInputStart"), nullptr);
-	GetWorldTimerManager().SetTimer(LocalHandle, TimerDel, TurnCameraDelay, false);
+	GetWorldTimerManager().SetTimer(LocalHandle, TimerDel, CameraDelay, false);
 }
 
 void ATurnBasedBattle::GetEnemyActions()
@@ -143,7 +143,7 @@ void ATurnBasedBattle::AllyInputStart(ABattleCharacter* Ally)
 	}
 	if (Player)
 	{
-		ChangeCameraFocusDelayed(AllyInput, BattlerBlendTime);
+		ChangeCameraFocusDelayed(AllyInput, BattlerBlendTime, CameraDelay);
 	}
 	if (TurnBattleWidget)
 	{
@@ -177,16 +177,16 @@ void ATurnBasedBattle::AllySelectAction(UBattleAction* Action)
 		NewFocus = ECameraFocus::AllBattlers;
 		break;
 	}
-	ChangeCameraView(NewFocus, TargetCameraDelay);
+	ChangeCameraView(NewFocus, BattlerBlendTime);
 }
 
-void ATurnBasedBattle::AllySelectTargets(ABattleCharacter* Target)
+void ATurnBasedBattle::AllySelectTargets(TArray<ABattleCharacter*> Targets)
 {
-	if (AllyTargets.Contains(Target))
+	if (Targets.Num() == 0)
 	{
 		return;
 	}
-	AllyTargets.Add(Target);
+	AllyTargets = Targets;
 }
 
 void ATurnBasedBattle::AllyActionConfirm()
@@ -269,7 +269,7 @@ void ATurnBasedBattle::EvaluateTurnStart() // checks if all allies declared acti
 	{
 		if (Player)
 		{
-			ChangeCameraFocus(this, TurnCameraDelay);
+			ChangeCameraFocus(this, BattlerBlendTime);
 		}
 		StartActionInOrder();
 		if (TurnBattleWidget)
@@ -294,7 +294,7 @@ void ATurnBasedBattle::StartActionInOrder() // called when Action ends.
 	{
 		if (Player)
 		{
-			ChangeCameraFocus(this, TurnCameraDelay);
+			ChangeCameraFocus(this, BattlerBlendTime);
 		}
 		InitializeTurn();
 		return;
@@ -308,7 +308,7 @@ void ATurnBasedBattle::StartActionInOrder() // called when Action ends.
 		{
 			if (Player)
 			{
-				ChangeCameraFocus(this, TurnCameraDelay);
+				ChangeCameraFocus(this, BattlerBlendTime);
 			}
 			InitializeTurn();
 			return;

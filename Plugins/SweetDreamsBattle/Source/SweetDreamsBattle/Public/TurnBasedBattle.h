@@ -40,10 +40,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Battle Manager|Battlers")
 	bool bGetAlliesFromPlayerController = true;
 	// 
-	UPROPERTY(EditAnywhere, Category = "Battle Manager|Camera", meta = (DisplayName = "Turn Input Start Delay", ClampMin = "0"))
-	float TurnCameraDelay = 0.8f;
-	UPROPERTY(EditAnywhere, Category = "Battle Manager|Camera", meta = (DisplayName = "Focus on Targets Delay", ClampMin = "0"))
-	float TargetCameraDelay = 0.0f;
+	UPROPERTY(EditAnywhere, Category = "Battle Manager|Camera", meta = (DisplayName = "Camera Blend Delay", ClampMin = "0", ToolTip = "Delay (in seconds) before starting a camera view blend.\n\nThis is automatically called when a Battler starts its input turn."))
+	float CameraDelay = 0.8f;
 	// ACTION
 	TArray<UBattleAction*> Actions;
 	TArray<int32> ActionOrder;
@@ -78,7 +76,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
 	virtual void AllySelectAction(UBattleAction* Action);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
-	virtual void AllySelectTargets(ABattleCharacter* Target);
+	virtual void AllySelectTargets(TArray<ABattleCharacter*> Targets);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
 	virtual void AllyActionConfirm();
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")

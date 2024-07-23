@@ -126,6 +126,10 @@ void ASweetDreamsBattleManager::ChangeCameraFocus(AActor* NewFocus, float BlendT
 
 void ASweetDreamsBattleManager::ChangeCameraFocusDelayed(AActor* NewFocus, float BlendTime, float DelayTime)
 {
+	if (DelayTime <= 0)
+	{
+		DelayTime = GetWorld()->GetDeltaSeconds();
+	}
 	FTimerDelegate TimerDel;
 	TimerDel.BindUFunction(this, FName("ChangeCameraFocus"), NewFocus, BlendTime);
 	GetWorldTimerManager().SetTimer(BattleTimer, TimerDel, DelayTime, false);
@@ -133,6 +137,7 @@ void ASweetDreamsBattleManager::ChangeCameraFocusDelayed(AActor* NewFocus, float
 
 void ASweetDreamsBattleManager::ChangeCameraView(ECameraFocus NewFocus, float BlendTime)
 {
+	ChangeCameraFocus(this, BattlerBlendTime);
 	int32 Index = static_cast<int32>(NewFocus);
 	if (Index <= MulticameraComponent->GetAllPossibleViews().Num() - 1)
 	{
