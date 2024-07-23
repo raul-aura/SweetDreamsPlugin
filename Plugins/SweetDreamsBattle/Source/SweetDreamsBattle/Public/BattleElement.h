@@ -9,6 +9,15 @@
 class ABattleCharacter;
 class UBattleAction;
 
+UENUM(BlueprintType)
+enum class ETargetType : uint8
+{
+	Ally UMETA(DisplayName = "Allies"),
+	DeadAlly UMETA(DisplayName = "Dead Allies"),
+	Enemy UMETA(DisplayName = "Enemies Only"),
+	Self UMETA(DisplayName = "Self Only"),
+};
+
 UCLASS(Blueprintable, BlueprintType)
 class SWEETDREAMSBATTLE_API UBattleElement : public UObject
 {
@@ -21,13 +30,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
 	virtual ABattleCharacter* GetOwner() const;
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
-	virtual FText GetName() const;
+	virtual FText GetElementName() const;
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
 	virtual void SetBattle(ASweetDreamsBattleManager* Battle);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
 	virtual void AddTarget(ABattleCharacter* Target);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
 	virtual void SetTarget(TArray<ABattleCharacter*> NewTargets);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
+	virtual void SetTargetRandom(TArray<ABattleCharacter*> PossibleTargets, int32 TargetAmount);
 	//
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element", meta = (ReturnDisplayName = "All Targets Killed"))
 	virtual bool DamageTargets(TArray<ABattleCharacter*> Targets, float& PostMitigatedDamage, int32& KilledTargets, float Damage = 100.0f, bool bCanBeMitigated = true);
@@ -36,9 +47,14 @@ public:
 	// virtual bool AddStateTargets(TArray<TSubclassOf<UBattleState>> States, float Chance = 1.0f, TArray<ABattleCharacter*> Targets, int32& StatesApplied);
 	// virtual bool RemoveStateTargets(TArray<TSubclassOf<UBattleState>> States, float Chance = 1.0f, TArray<ABattleCharacter*> Targets, int32& StatesRemoved);
 	// virtual bool CleanseTargets(TArray<ABattleCharacter*> Targets, int32& StatesRemoved);
-	// virtual void KillTargets(TArray<ABattleCharacter*> Targets);
-	// virtual float StartAnimation(UAnimSequence* Animation, TArray<ABattleCharacter*> Targets);
-	// virtual void ForceAction(TSubClassOf<UBattleAction>, TArray<ABattleCharacter*> Targets);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
+	virtual void KillTargets(TArray<ABattleCharacter*> Targets);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
+	virtual void ReviveTargets(TArray<ABattleCharacter*> Targets);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element", meta = (ReturnDisplayName = "Animation Length"))
+	virtual float StartAnimation(UAnimSequence* Animation, TArray<ABattleCharacter*> Targets);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
+	virtual void ForceAction(TSubclassOf<UBattleAction> Action, TArray<ABattleCharacter*> Targets, bool bUseCooldown = true);
 
 protected:
 
@@ -51,4 +67,6 @@ protected:
 	FText ElementName = FText::FromString(TEXT("Element"));
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Sweet Dreams RPG|Element")
 	TArray<ABattleCharacter*> ElementTargets;
+	//
+	virtual bool AreTargetsValid(TArray<ABattleCharacter*>& Targets);
 };

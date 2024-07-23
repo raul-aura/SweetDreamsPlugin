@@ -87,6 +87,14 @@ void UBattlerDataComponent::Kill_Implementation()
 	bIsDead = true;
 }
 
+void UBattlerDataComponent::Revive_Implementation()
+{
+	if (IsDead())
+	{
+		bIsDead = false;
+	}
+}
+
 bool UBattlerDataComponent::IsDead() const
 {
 	return bIsDead;

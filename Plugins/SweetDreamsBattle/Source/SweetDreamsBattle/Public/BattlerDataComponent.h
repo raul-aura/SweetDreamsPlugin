@@ -77,6 +77,9 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void Kill();
 	virtual void Kill_Implementation();
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void Revive();
+	virtual void Revive_Implementation();
 	UFUNCTION(BlueprintCallable)
 	virtual bool IsDead() const;
 };

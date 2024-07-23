@@ -89,3 +89,27 @@ TArray<UBattleAction*> ABattleCharacter::GetAllActions() const
 	return Actions;
 }
 
+void ABattleCharacter::UpdateActionsCooldown()
+{
+	if (Actions.Num() == 0)
+	{
+		return;
+	}
+	for (UBattleAction* Action : Actions)
+	{
+		Action->UpdateCooldown();
+	}
+}
+
+void ABattleCharacter::ResetActions()
+{
+	if (Actions.Num() == 0)
+	{
+		return;
+	}
+	for (UBattleAction* Action : Actions)
+	{
+		Action->ResetAction();
+	}
+}
+

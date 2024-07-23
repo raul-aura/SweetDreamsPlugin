@@ -34,7 +34,7 @@ protected:
 
 	// CHARACTER
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Character")
-	FText DisplayName = FText::FromString(TEXT("Character")); // change to localizable text
+	FText DisplayName = FText::FromString(TEXT("Character"));
 	// BATTLE
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Battle", meta = (DisplayName = "Actions"))
 	TArray<TSoftClassPtr<UBattleAction>> ActionClasses;
@@ -50,12 +50,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Character")
 	virtual FText GetCharacterName() const;
 
-	// ACTION
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle")
+	// DATA
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Character")
 	virtual UBattlerDataComponent* GetBattlerParameters() const;
-
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle")
+	// ACTION
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Character")
 	virtual UBattleAction* GetRandomAction() const;
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Character")
 	virtual TArray<UBattleAction*> GetAllActions() const;
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Character")
+	virtual void UpdateActionsCooldown();
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Character")
+	virtual void ResetActions();
 };

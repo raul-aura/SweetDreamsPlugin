@@ -9,14 +9,6 @@
 
 class ASweetDreamsBattleManager;
 
-UENUM(BlueprintType)
-enum class ETargetType : uint8
-{
-	Ally UMETA(DisplayName = "Allies Only"),
-	Enemy UMETA(DisplayName = "Enemies Only"),
-	Self UMETA(DisplayName = "Self Only"),
-};
-
 UCLASS()
 class SWEETDREAMSBATTLE_API UBattleAction : public UBattleElement
 {
@@ -24,21 +16,31 @@ class SWEETDREAMSBATTLE_API UBattleAction : public UBattleElement
 	
 public:
 	// ACTION CONTROL
-	UFUNCTION(BlueprintImplementableEvent)
-	void OnActionStart();
-
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action")
+	virtual void StartAction(bool bUseCooldown);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action")
+	virtual void StartActionForced(bool bUseCooldown);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action")
+	virtual void RefreshCooldown();
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action")
+	virtual void UpdateCooldown();
 	// OWNERSHIP & TARGET
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action")
 	virtual void ResetAction();
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action")
+	virtual bool IsActionAvailable() const;
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action|Target")
 	virtual ETargetType GetTargetType() const;
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action|Target")
 	virtual int32 GetTargetAmount() const;
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action|Target")
 	virtual bool GetIfIncludeSelf() const;
-
+	//
+	virtual float StartAnimation(UAnimSequence* Animation, TArray<ABattleCharacter*> Targets) override;
 protected:
 	// ACTION CONTROL
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnActionStart();
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnActionEnd();
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action")
@@ -46,6 +48,9 @@ protected:
 	void UpdateTimer(float Delay);
 	//
 	FTimerHandle ActionTimer;
+	FTimerHandle ActionCooldown;
+	int32 TurnsPassed = 0;
+	bool bIsOnCooldown = false;
 	//
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Action", meta = (DisplayName = "Targets"))
 	ETargetType TargetType = ETargetType::Ally;
@@ -55,11 +60,15 @@ protected:
 	int32 TargetAmount = 1;
 	//
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Data", meta = (ClampMin = "0"))
-	float Cost = 100; // create function to get cost and see if have enough to use
+	float Cost = 100;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Data", meta = (DisplayName = "Cooldown (Seconds)", ClampMin = "0", EditCondition = "bTurnBasedAction==false", EditConditionHides))
+	float Cooldown = 0;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Data", meta = (DisplayName = "Cooldown (Turns)", ClampMin = "0", EditCondition = "bTurnBasedAction==true", EditConditionHides))
+	int32 CooldownTurns = 0;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Data", meta = (ClampMin = "0", ClampMax = "1"))
 	float PriorityWeigth = 1; // create weighted priority when Randomizing Action
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Sweet Dreams RPG|Settings")
 	bool bTurnBasedAction = false;
-	//add functions to deal damage, heal, add/remove state, change camera, focus on target, call animation 
-	
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Sweet Dreams RPG|Settings", meta = (DisplayName = "Is Last Action when Forced", EditCondition = "bTurnBasedAction==true", EditConditionHides))
+	bool bAddedLast = false;
 };

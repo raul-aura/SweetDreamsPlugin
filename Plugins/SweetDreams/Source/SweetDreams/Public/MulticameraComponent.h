@@ -3,11 +3,23 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Curves/CurveFloat.h"
 #include "Components/ActorComponent.h"
 #include "Camera/CameraComponent.h"
 #include "MulticameraComponent.generated.h"
 
-UCLASS(ClassGroup = ("SweetDreams"), meta = (BlueprintSpawnableComponent, ToolTip = "This component enables the management of multiple cameras on the same actor. Similar to a View Target Blend, but with internal cameras inside a single actor.\n\nUse the function TransferCameraProperties() to transfer the settings of a secondary camera to the primary one."))
+USTRUCT(BlueprintType)
+struct FCameraViews
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, meta = (DisplayName = "Camera Location"))
+	FVector Location;
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, meta = (DisplayName = "Camera Rotation"))
+	FRotator Rotation;
+};
+
+UCLASS(ClassGroup = ("SweetDreams"), meta = (BlueprintSpawnableComponent, ToolTip = "This component enables the management of multiple cameras on the same actor. Similar to a View Target Blend, but with internal cameras inside a single actor.\n\nUse the function SetNewCameraView() to transfer the settings of a secondary camera to the primary one."))
 class SWEETDREAMS_API UMulticameraComponent : public UActorComponent
 {
 	GENERATED_BODY()
@@ -19,12 +31,10 @@ protected:
 	virtual void BeginPlay() override;
 	
 	void FindCamera();
-	void UpdateCameras();
+	void CameraBlend();
 
-	UPROPERTY(EditAnywhere, Category = "Cameras", meta = (DisplayName = "Camera Locations"))
-	TArray<FVector> Locations;
-	UPROPERTY(EditAnywhere, Category = "Cameras", meta = (DisplayName = "Camera Rotations"))
-	TArray<FRotator> Rotations;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Cameras")
+	TArray<FCameraViews> CameraViews;
 
 	// COMPONENTS
 	UCameraComponent* ActiveCamera;
@@ -33,6 +43,9 @@ protected:
 	FTimerHandle BlendHandle;
 	float BlendElapsedTime;
 	float BlendTotalTime;
+	float AlphaMultiplier;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Blend")
+	UCurveFloat* AlphaCurve;
 
 	// CAMERA PARAMS
 	FVector StartLocation;
@@ -45,8 +58,10 @@ public:
 
 	// @param CameraToMatch Camera Component to get settings and transfer to primary camera. Function won't happen if this input is null.
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Star|Camera", meta = (ToolTip = "Transfer the properties of the camera to match to the primary camera."))
-	void TransferCameraProperties(int32 CameraToMatch = 0, float BlendTime = 1.0f);
+	virtual void SetNewCameraView(int32 CameraToMatch = 0, float BlendTime = 1.0f);
 
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Star|Camera", meta = (ToolTip = "Defines a new camera to be the current one. Ideal when you have multiple cameras."))
-	void SetActiveCamera(UCameraComponent* NewCamera);
+	virtual void SetActiveCamera(UCameraComponent* NewCamera);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Star|Camera")
+	virtual TArray<FCameraViews> GetAllPossibleViews() const;
 };

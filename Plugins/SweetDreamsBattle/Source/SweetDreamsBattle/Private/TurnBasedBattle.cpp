@@ -26,9 +26,13 @@ void ATurnBasedBattle::BeginPlay()
 void ATurnBasedBattle::StartBattle(FName State, float BlendTime)
 {
 	Super::StartBattle(State, BlendTime);
+	InitializeTurn();
+}
+
+void ATurnBasedBattle::LoadBattlers()
+{
 	LoadSpawnBattlers(EnemyClasses, Enemies, EnemyTransforms);
 	LoadSpawnBattlers(AllyClasses, Allies, AllyTransforms);
-	InitializeTurn();
 }
 
 void ATurnBasedBattle::LoadSpawnBattlers(TArray<TSoftClassPtr<ABattleCharacter>> Battlers, TArray<ABattleCharacter*>& BattlerGroup, TArray<FTransform> TransformGroup)
@@ -53,15 +57,34 @@ void ATurnBasedBattle::LoadSpawnBattlers(TArray<TSoftClassPtr<ABattleCharacter>>
 			}
 		}
 	}
+	if (Allies.Num() > 0)
+	{
+		AllBattlers.Append(Allies);
+	}
+	if (Enemies.Num() > 0)
+	{
+		AllBattlers.Append(Enemies);
+	}
+}
+
+void ATurnBasedBattle::ChangeCameraView(ECameraFocus NewFocus, float BlendTime)
+{
+	if (NewFocus == ECameraFocus::Self)
+	{
+		// AllyInput->MulticameraComponent ...
+		ChangeCameraFocus(AllyInput, BlendTime);
+		return;
+	}
+	Super::ChangeCameraView(NewFocus, BlendTime);
 }
 
 void ATurnBasedBattle::InitializeTurn() // resets actions to initialize turn
 {
 	CurrentAction = -1;
 	CurrentAllyIndex = 0;
-	for (UBattleAction* Action : Actions)
+	for (ABattleCharacter* Battler : AllBattlers)
 	{
-		Action->ResetAction();
+		Battler->UpdateActionsCooldown();
 	}
 	Actions.Empty();
 	if (EvaluateEndBattle())
@@ -89,8 +112,7 @@ void ATurnBasedBattle::GetEnemyActions()
 			Action->SetBattle(this);
 			if (Allies.Num() > 0)
 			{
-				int32 RandomIndex = FMath::RandRange(0, Allies.Num() - 1);
-				Action->AddTarget(Allies[RandomIndex]);
+				Action->SetTargetRandom(Allies, Action->GetTargetAmount());
 			}
 			Actions.Add(Action);
 		}
@@ -112,7 +134,7 @@ void ATurnBasedBattle::AllyInputStart(ABattleCharacter* Ally)
 		LocalIndex++;
 		if (LocalIndex >= Allies.Num())
 		{
-			// battle = notvictorious
+			bIsVictorious = false;
 			EndBattle();
 			return;
 		}
@@ -136,28 +158,26 @@ void ATurnBasedBattle::AllySelectAction(UBattleAction* Action)
 		return;
 	}
 	AllySelectedAction = Action;
-	TArray<ABattleCharacter*> NewTargets;
+	UpdatePossibleTargets(Action);
+	ECameraFocus NewFocus;
 	ETargetType TargetType = Action->GetTargetType();
 	switch (TargetType)
 	{
 	case ETargetType::Ally:
-		NewTargets = Allies;
-		if (!Action->GetIfIncludeSelf())
-		{
-			NewTargets.Remove(AllyInput);
-		}
+	case ETargetType::DeadAlly:
+		NewFocus = ECameraFocus::Allies;
 		break;
 	case ETargetType::Enemy:
-		NewTargets = Enemies;
+		NewFocus = ECameraFocus::Enemies;
 		break;
 	case ETargetType::Self:
-		NewTargets.Add(AllyInput);
+		NewFocus = ECameraFocus::Self;
 		break;
 	default:
+		NewFocus = ECameraFocus::AllBattlers;
 		break;
 	}
-	AllyPossibleTargets = NewTargets;
-	// change camera based on ally possible targets
+	ChangeCameraView(NewFocus, TargetCameraDelay);
 }
 
 void ATurnBasedBattle::AllySelectTargets(ABattleCharacter* Target)
@@ -181,6 +201,56 @@ void ATurnBasedBattle::AllyActionConfirm()
 		// get speed and convert into ActionOrder.Add(num)
 	}
 	EvaluateTurnStart();
+}
+
+void ATurnBasedBattle::AddActionAuto(UBattleAction* Action, bool bAddAsLast)
+{
+	if (Action)
+	{
+		if (bAddAsLast)
+		{
+			Actions.Add(Action);
+		}
+		else
+		{
+			// get speed and convert into ActionOrder.Add(num)
+		}
+	}
+}
+
+void ATurnBasedBattle::UpdatePossibleTargets(UBattleAction* Action)
+{
+	TArray<ABattleCharacter*> NewTargets;
+	ETargetType TargetType = Action->GetTargetType();
+	switch (TargetType)
+	{
+	case ETargetType::Ally:
+		NewTargets = Allies;
+		if (!Action->GetIfIncludeSelf())
+		{
+			NewTargets.Remove(AllyInput);
+		}
+		break;
+	case ETargetType::DeadAlly:
+		NewTargets = Allies;
+		for (ABattleCharacter* Ally : NewTargets)
+		{
+			if (Ally->GetBattlerParameters()->IsDead())
+			{
+				NewTargets.Remove(Ally);
+			}
+		}
+		break;
+	case ETargetType::Enemy:
+		NewTargets = Enemies;
+		break;
+	case ETargetType::Self:
+		NewTargets.Add(AllyInput);
+		break;
+	default:
+		break;
+	}
+	AllyPossibleTargets = NewTargets;
 }
 
 ABattleCharacter* ATurnBasedBattle::GetCurrentInputAlly() const
@@ -246,40 +316,23 @@ void ATurnBasedBattle::StartActionInOrder() // called when Action ends.
 		CurrentActionRef = Actions[CurrentAction]; //Actions[ActionOrder[CurrentAction]]->OnActionStart();
 		if (!CurrentActionRef) return;
 	}
-	//
 	ChangeCameraFocus(CurrentActionRef->GetOwner(), BattlerBlendTime);
-	//
-	float ActionDelay = 1.0f; // change to persistent variable 
-	FTimerHandle LocalHandle; // create function StartActionDelayed()
+	FTimerHandle LocalHandle;
 	FTimerDelegate TimerDel;
-	TimerDel.BindUFunction(CurrentActionRef, FName("OnActionStart"));
+	TimerDel.BindUFunction(CurrentActionRef, FName("StartAction"), true);
 	GetWorldTimerManager().SetTimer(LocalHandle, TimerDel, BattlerBlendTime + ActionDelay, false);
-}
-
-bool ATurnBasedBattle::EvaluateEndBattle()
-{
-	for (ABattleCharacter* Enemy : Enemies)
-	{
-		if (!Enemy->GetBattlerParameters()->IsDead())
-		{
-			// battle victorious true
-			return false;
-		}
-	}
-	EndBattle();
-	return Super::EvaluateEndBattle();
 }
 
 void ATurnBasedBattle::EndBattle(FName State, float BlendTime)
 {
-	Super::EndBattle(State, BlendTime);
 	CurrentAction = -1;
 	CurrentAllyIndex = 0;
-	for (UBattleAction* Action : Actions)
+	for (ABattleCharacter* Battler : AllBattlers)
 	{
-		Action->ResetAction();
+		Battler->ResetActions();
 	}
 	Actions.Empty();
+	Super::EndBattle(State, BlendTime);
 }
 
 

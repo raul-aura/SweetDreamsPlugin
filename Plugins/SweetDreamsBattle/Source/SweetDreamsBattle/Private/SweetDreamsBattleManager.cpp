@@ -36,7 +36,6 @@ void ASweetDreamsBattleManager::BeginPlay()
 void ASweetDreamsBattleManager::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 void ASweetDreamsBattleManager::StartBattle(FName State, float BlendTime)
@@ -45,6 +44,7 @@ void ASweetDreamsBattleManager::StartBattle(FName State, float BlendTime)
 	{
 		return;
 	}
+	LoadBattlers();
 	bIsBattleActive = true;
 	ASweetDreamsGameMode* GameMode = Cast<ASweetDreamsGameMode>(UGameplayStatics::GetGameMode(this));
 	if (GameMode && State != "None")
@@ -60,7 +60,10 @@ void ASweetDreamsBattleManager::StartBattle(FName State, float BlendTime)
 	{
 		BattleWidget->SetVisibility(ESlateVisibility::Visible);
 	}
+	OnBattleStart();
 }
+
+void ASweetDreamsBattleManager::LoadBattlers() {}
 
 void ASweetDreamsBattleManager::EndBattle(FName State, float BlendTime)
 {
@@ -78,13 +81,34 @@ void ASweetDreamsBattleManager::EndBattle(FName State, float BlendTime)
 	{
 		BattleWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
+	OnBattleEnd(bIsVictorious);
 }
 
-bool ASweetDreamsBattleManager::EvaluateEndBattle() { return true; }
+bool ASweetDreamsBattleManager::EvaluateEndBattle()
+{ 
+	if (Enemies.Num() > 0)
+	{
+		for (ABattleCharacter* Enemy : Enemies)
+		{
+			if (!Enemy->GetBattlerParameters()->IsDead())
+			{
+				return false;
+			}
+		}
+	}
+	bIsVictorious = true;
+	EndBattle();
+	return bIsVictorious;
+}
 
 bool ASweetDreamsBattleManager::IsBattleOngoing() const
 {
 	return bIsBattleActive;
+}
+
+bool ASweetDreamsBattleManager::IsBattleVictorious() const
+{
+	return bIsVictorious;
 }
 
 void ASweetDreamsBattleManager::ChangeCameraFocus(AActor* NewFocus, float BlendTime)
@@ -105,5 +129,14 @@ void ASweetDreamsBattleManager::ChangeCameraFocusDelayed(AActor* NewFocus, float
 	FTimerDelegate TimerDel;
 	TimerDel.BindUFunction(this, FName("ChangeCameraFocus"), NewFocus, BlendTime);
 	GetWorldTimerManager().SetTimer(BattleTimer, TimerDel, DelayTime, false);
+}
+
+void ASweetDreamsBattleManager::ChangeCameraView(ECameraFocus NewFocus, float BlendTime)
+{
+	int32 Index = static_cast<int32>(NewFocus);
+	if (Index <= MulticameraComponent->GetAllPossibleViews().Num() - 1)
+	{
+		MulticameraComponent->SetNewCameraView(Index, BlendTime);
+	}
 }
 
