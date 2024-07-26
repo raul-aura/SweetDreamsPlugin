@@ -46,11 +46,11 @@ protected:
 	void OnBattleEnd(bool bBattleVictorious);
 
 	// COMPONENTS
-	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Components")
 	UCameraComponent* BattleCamera;
-	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Components")
 	UMulticameraComponent* MulticameraComponent;
-	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Components")
 	USceneComponent* BattleRoot;
 	UPROPERTY(BlueprintReadOnly, Category = "Battle Manager")
 	APlayerController* Player;

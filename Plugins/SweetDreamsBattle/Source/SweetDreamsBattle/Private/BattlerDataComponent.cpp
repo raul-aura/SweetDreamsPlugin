@@ -21,16 +21,18 @@ void UBattlerDataComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 
 }
 
-float UBattlerDataComponent::GetModifiers(TArray<float> Modifiers, float BaseMultiplier) const
+float UBattlerDataComponent::GetModifiers(TArray<float> Modifiers, float Parameter, float BaseMultiplier) const
 {
-	float Multiplier = 0;
-	Modifiers.Add(BaseMultiplier);
+	if (BaseMultiplier < 0 || Parameter < 0) return 0.0f;
+	float MultipliedParam = Parameter * (BaseMultiplier / 100);
+	Modifiers.Add(MultipliedParam);
+	float AllModifiers = 0;
 	for (float Modifier : Modifiers)
 	{
-		Multiplier += Modifier;
+		AllModifiers += Modifier;
 	}
-	Multiplier = FMath::Max(Multiplier, 0.0f);
-	return Multiplier / 100;
+	AllModifiers = FMath::Max(AllModifiers, 0.0f);
+	return AllModifiers;
 }
 
 ABattleCharacter* UBattlerDataComponent::GetBattlerOwner() const
@@ -40,17 +42,68 @@ ABattleCharacter* UBattlerDataComponent::GetBattlerOwner() const
 
 float UBattlerDataComponent::GetHealth() const
 {
-	return CurrentHealth * GetModifiers(HealthModifiers, HealthMultiplier);
+	return CurrentHealth + GetModifiers(HealthModifiers, CurrentHealth, HealthMultiplier);
 }
 
 float UBattlerDataComponent::GetForce() const
 {
-	return Force * GetModifiers(ForceModifiers, ForceMultiplier);
+	return Force + GetModifiers(ForceModifiers, Force, ForceMultiplier);
 }
 
 float UBattlerDataComponent::GetResistence() const
 {
-	return Resistence * GetModifiers(ResistenceModifiers, ResistenceMultiplier);
+	return Resistence + GetModifiers(ResistenceModifiers, Resistence, ResistenceMultiplier);
+}
+
+int32 UBattlerDataComponent::AddModifier(TArray<float>& Modifiers, float ModifierToAdd)
+{
+	if (ModifierToAdd < 0.0f) return -1;
+	return Modifiers.Add(ModifierToAdd);
+}
+
+bool UBattlerDataComponent::UpdateModifier(TArray<float>& Modifiers, float ModifierToSearch, float NewModifier)
+{
+	if (ModifierToSearch < 0.0f || NewModifier < 0.0f) return false;
+	int32 FoundIndex;
+	if (Modifiers.Find(ModifierToSearch, FoundIndex))
+	{
+		Modifiers[FoundIndex] = NewModifier;
+		return true;
+	}
+	return false;
+}
+
+bool UBattlerDataComponent::UpdateModifierAt(TArray<float>& Modifiers, int32 Index, float NewModifier)
+{
+	if (Index < 0 || NewModifier < 0.0f) return false;
+	if (Modifiers.IsValidIndex(Index))
+	{
+		Modifiers[Index] = NewModifier;
+		return true;
+	}
+	return false;
+}
+
+bool UBattlerDataComponent::RemoveModifier(TArray<float>& Modifiers, float ModifierToRemove)
+{
+	if (ModifierToRemove < 0.0f) return false;
+	if (Modifiers.Find(ModifierToRemove))
+	{
+		Modifiers.Remove(ModifierToRemove);
+		return true;
+	}
+	return false;
+}
+
+bool UBattlerDataComponent::RemoveModifierAt(TArray<float>& Modifiers, int32 Index)
+{
+	if (Index < 0) return false;
+	if (Modifiers.IsValidIndex(Index))
+	{
+		Modifiers.RemoveAt(Index);
+		return true;
+	}
+	return false;
 }
 
 float UBattlerDataComponent::ReceiveDamage(float Damage, bool bCanBeMitigated)

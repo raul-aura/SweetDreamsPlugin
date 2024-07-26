@@ -17,6 +17,8 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void ShowPlayerInput();
+	UFUNCTION(BlueprintCallable)
+	void ShowPlayerInputDelayed(float Delay = 1.0f);
 	UFUNCTION(BlueprintImplementableEvent)
 	void HidePlayerInput();
 
@@ -24,6 +26,7 @@ public:
 	void SetBattleManager(ATurnBasedBattle* Battle);
 
 protected:
+	FTimerHandle InputTimer;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Sweet Dreams RPG")
 	ATurnBasedBattle* BattleManager;

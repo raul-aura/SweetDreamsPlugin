@@ -50,9 +50,18 @@ void ATurnBasedBattle::LoadSpawnBattlers(TArray<TSoftClassPtr<ABattleCharacter>>
 			if (SpawnedBattler)
 			{
 				FText NewName = SpawnedBattler->GetCharacterName();
-				FText IndexText = FText::AsNumber(i);
-				FText CombinedText = FText::Format(FText::FromString("{0}{1}"), NewName, IndexText);
-				SpawnedBattler->SetActorLabel(CombinedText.ToString());
+				FString IndexLetter = FString::Chr('A' + i);
+				FText IndexText = FText::FromString(IndexLetter);
+				FText CombinedText = FText::Format(FText::FromString("{0} {1}"), NewName, IndexText);
+				if (BattlerGroup == Enemies)
+				{
+					SpawnedBattler->SetActorLabel(CombinedText.ToString());
+					SpawnedBattler->SetCharacterName(CombinedText);
+				}
+				else
+				{
+					SpawnedBattler->SetActorLabel(NewName.ToString());
+				}
 				BattlerGroup.Add(SpawnedBattler);
 			}
 		}
@@ -85,6 +94,15 @@ void ATurnBasedBattle::InitializeTurn() // resets actions to initialize turn
 	for (ABattleCharacter* Battler : AllBattlers)
 	{
 		Battler->UpdateActionsCooldown();
+		TArray<UBattleState*> States = Battler->GetAllStates();
+		if (States.Num() > 0)
+		{
+			for (UBattleState* State : States)
+			{
+				State->ConsumeLifetime(EStateLifetime::Turn);
+				State->OnTurnStart();
+			}
+		}
 	}
 	Actions.Empty();
 	if (EvaluateEndBattle())
@@ -147,7 +165,8 @@ void ATurnBasedBattle::AllyInputStart(ABattleCharacter* Ally)
 	}
 	if (TurnBattleWidget)
 	{
-		TurnBattleWidget->ShowPlayerInput(); // make it delayed along with the BattlerBlendTime.
+
+		TurnBattleWidget->ShowPlayerInputDelayed(BattlerBlendTime + CameraDelay); // make it delayed along with the BattlerBlendTime.
 	}
 }
 
@@ -216,6 +235,14 @@ void ATurnBasedBattle::AddActionAuto(UBattleAction* Action, bool bAddAsLast)
 			// get speed and convert into ActionOrder.Add(num)
 		}
 	}
+}
+
+bool ATurnBasedBattle::IsActionValid(UBattleAction* Action)
+{
+	if (!Action) return false;
+	ABattleCharacter* ActionOwner = Action->GetOwner();
+	if (!ActionOwner) return false;
+	return !ActionOwner->GetBattlerParameters()->IsDead() && !ActionOwner->IsPendingKill() && Action->AreTargetsValid();
 }
 
 void ATurnBasedBattle::UpdatePossibleTargets(UBattleAction* Action)
@@ -301,7 +328,7 @@ void ATurnBasedBattle::StartActionInOrder() // called when Action ends.
 	}
 	UBattleAction* CurrentActionRef = Actions[CurrentAction]; //Actions[ActionOrder[CurrentAction]]->OnActionStart();
 	if (!CurrentActionRef) return;
-	while (CurrentActionRef->GetOwner()->GetBattlerParameters()->IsDead() || CurrentActionRef->GetOwner()->IsPendingKill())
+	while (!IsActionValid(CurrentActionRef))
 	{
 		CurrentAction++;
 		if (CurrentAction >= Actions.Num())
@@ -313,7 +340,7 @@ void ATurnBasedBattle::StartActionInOrder() // called when Action ends.
 			InitializeTurn();
 			return;
 		}
-		CurrentActionRef = Actions[CurrentAction]; //Actions[ActionOrder[CurrentAction]]->OnActionStart();
+		CurrentActionRef = Actions[CurrentAction];
 		if (!CurrentActionRef) return;
 	}
 	ChangeCameraFocus(CurrentActionRef->GetOwner(), BattlerBlendTime);

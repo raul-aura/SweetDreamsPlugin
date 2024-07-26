@@ -24,6 +24,8 @@ public:
 	virtual void RefreshCooldown();
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action")
 	virtual void UpdateCooldown();
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action")
+	virtual float GetPriorityWeight() const;
 	// OWNERSHIP & TARGET
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action")
 	virtual void ResetAction();
@@ -45,6 +47,7 @@ protected:
 	void OnActionEnd();
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action")
 	virtual void EndAction(float Delay = 1.0f);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action")
 	void UpdateTimer(float Delay);
 	//
 	FTimerHandle ActionTimer;
@@ -56,7 +59,7 @@ protected:
 	ETargetType TargetType = ETargetType::Ally;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Action", meta = (EditCondition = "TargetType==ETargetType::Ally"))
 	bool bIncludeSelf = true;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Action", meta = (ClampMin = "0"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Action", meta = (ClampMin = "1"))
 	int32 TargetAmount = 1;
 	//
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Data", meta = (ClampMin = "0"))
@@ -65,8 +68,8 @@ protected:
 	float Cooldown = 0;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Data", meta = (DisplayName = "Cooldown (Turns)", ClampMin = "0", EditCondition = "bTurnBasedAction==true", EditConditionHides))
 	int32 CooldownTurns = 0;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Data", meta = (ClampMin = "0", ClampMax = "1"))
-	float PriorityWeigth = 1; // create weighted priority when Randomizing Action
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Data", meta = (ClampMin = "0.1", ClampMax = "1"))
+	float PriorityWeigth = 1.0f;
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Sweet Dreams RPG|Settings")
 	bool bTurnBasedAction = false;
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Sweet Dreams RPG|Settings", meta = (DisplayName = "Is Last Action when Forced", EditCondition = "bTurnBasedAction==true", EditConditionHides))

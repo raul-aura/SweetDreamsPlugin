@@ -55,7 +55,14 @@ void ABattleCharacter::CreateActions()
 void ABattleCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	if (States.Num() > 0)
+	{
+		for (UBattleState* State : States)
+		{
+			State->ConsumeLifetime(EStateLifetime::Second);
+			State->OnTick();
+		}
+	}
 }
 
 void ABattleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -66,7 +73,16 @@ void ABattleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 FText ABattleCharacter::GetCharacterName() const
 {
-	return DisplayName;
+	return CharacterName;
+}
+
+void ABattleCharacter::SetCharacterName(FText NewName)
+{
+	if (NewName.EqualTo(FText::FromString(TEXT(""))))
+	{
+		return;
+	}
+	CharacterName = NewName;
 }
 
 UBattlerDataComponent* ABattleCharacter::GetBattlerParameters() const
@@ -76,12 +92,30 @@ UBattlerDataComponent* ABattleCharacter::GetBattlerParameters() const
 
 UBattleAction* ABattleCharacter::GetRandomAction() const
 {
-	if (Actions.Num() == 0)
+	if (Actions.Num() == 0) return nullptr;
+	float TotalWeight = 0.0f;
+	TArray<float> Weights;
+	for (UBattleAction* Action : Actions)
 	{
-		return nullptr;
+		float Weight = Action->GetPriorityWeight();
+		TotalWeight += Weight;
+		Weights.Add(Weight);
 	}
-	int32 Random = FMath::FRandRange(0, Actions.Num() - 1);
-	return Actions[Random];
+	for (float& Weight : Weights)
+	{
+		Weight /= TotalWeight;
+	}
+	int32 RandomNum = FMath::FRand();
+	float AccWeight = 0.0f;
+	for (int32 Index = 0; Index < Weights.Num(); Index++)
+	{
+		AccWeight += Weights[Index];
+		if (AccWeight >= RandomNum)
+		{
+			return Actions[Index];
+		}
+	}
+	return Actions[0];
 }
 
 TArray<UBattleAction*> ABattleCharacter::GetAllActions() const
@@ -91,10 +125,7 @@ TArray<UBattleAction*> ABattleCharacter::GetAllActions() const
 
 void ABattleCharacter::UpdateActionsCooldown()
 {
-	if (Actions.Num() == 0)
-	{
-		return;
-	}
+	if (Actions.Num() == 0) return;
 	for (UBattleAction* Action : Actions)
 	{
 		Action->UpdateCooldown();
@@ -103,13 +134,64 @@ void ABattleCharacter::UpdateActionsCooldown()
 
 void ABattleCharacter::ResetActions()
 {
-	if (Actions.Num() == 0)
-	{
-		return;
-	}
+	if (Actions.Num() == 0) return;
 	for (UBattleAction* Action : Actions)
 	{
 		Action->ResetAction();
 	}
+}
+
+void ABattleCharacter::AddState(TSubclassOf<UBattleState> State, ABattleCharacter* StateInstigator)
+{
+	if (!State || !StateInstigator) return;
+	UBattleState* NewState = nullptr;
+	for (UBattleState* ForState : States)
+	{
+		if (ForState->IsA(State))
+		{
+			NewState = ForState;
+			break;
+		}
+	}
+	if (!NewState)
+	{
+		NewState = NewObject<UBattleState>(this, State);
+		NewState->SetOwner(this);
+		States.Add(NewState);
+	}
+	NewState->ApplyState(StateInstigator);
+}
+
+void ABattleCharacter::RemoveState(TSubclassOf<UBattleState> State)
+{
+	if (!State) return;
+	for (UBattleState* LocalState : States)
+	{
+		if (LocalState->IsA(State))
+		{
+			LocalState->OnRemoved();
+			States.Remove(LocalState);
+			LocalState->ConditionalBeginDestroy();
+			return;
+		}
+	}
+}
+
+int32 ABattleCharacter::RemoveAllStates()
+{
+	int32 StatesRemoved = 0;
+	for (UBattleState* State : States)
+	{
+		State->OnRemoved();
+		States.Remove(State);
+		State->ConditionalBeginDestroy();
+		StatesRemoved++;
+	}
+	return StatesRemoved;
+}
+
+TArray<UBattleState*> ABattleCharacter::GetAllStates() const
+{
+	return States;
 }
 

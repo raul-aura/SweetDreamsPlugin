@@ -71,6 +71,11 @@ void UBattleAction::UpdateCooldown()
 	}
 }
 
+float UBattleAction::GetPriorityWeight() const
+{
+	return PriorityWeigth;
+}
+
 void UBattleAction::UpdateTimer(float Delay)
 {
 	if (Owner)
@@ -101,6 +106,15 @@ void UBattleAction::EndAction(float Delay)
 	}
 	if (Owner)
 	{
+		TArray<UBattleState*> States = Owner->GetAllStates();
+		if (States.Num() > 0)
+		{
+			for (UBattleState* State : States)
+			{
+				State->ConsumeLifetime(EStateLifetime::Action);
+				State->OnActionEnd();
+			}
+		}
 		Owner->GetWorldTimerManager().ClearTimer(ActionTimer);
 	}
 }

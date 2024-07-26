@@ -126,7 +126,7 @@ void ASweetDreamsBattleManager::ChangeCameraFocus(AActor* NewFocus, float BlendT
 
 void ASweetDreamsBattleManager::ChangeCameraFocusDelayed(AActor* NewFocus, float BlendTime, float DelayTime)
 {
-	if (DelayTime <= 0)
+	if (DelayTime <= 0.0f)
 	{
 		DelayTime = GetWorld()->GetDeltaSeconds();
 	}

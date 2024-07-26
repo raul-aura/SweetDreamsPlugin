@@ -46,6 +46,7 @@ protected:
 	TArray<UBattleAction*> Actions;
 	TArray<int32> ActionOrder;
 	int32 CurrentAction = -1;
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
 	virtual void GetEnemyActions();
 	UPROPERTY(EditAnywhere, Category = "Battle Manager|Action", meta = (ClampMin = "0"))
 	float ActionDelay = 0.5f;
@@ -81,6 +82,8 @@ public:
 	virtual void AllyActionConfirm();
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
 	virtual void AddActionAuto(UBattleAction* Action, bool bAddAsLast = true);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
+	virtual bool IsActionValid(UBattleAction* Action);
 	virtual void UpdatePossibleTargets(UBattleAction* Action);
 	// GETTERS
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
