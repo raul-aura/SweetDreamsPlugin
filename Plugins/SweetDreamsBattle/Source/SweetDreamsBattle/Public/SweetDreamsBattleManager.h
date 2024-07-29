@@ -14,7 +14,7 @@
 class USceneComponent;
 
 UENUM(BlueprintType)
-enum class ECameraFocus : uint8
+enum class ECameraView : uint8
 {
 	AllBattlers,
 	Allies,
@@ -76,12 +76,14 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
 	virtual void StartBattle(FName State = "None", float BlendTime = 2.0f);
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
-	virtual void LoadBattlers();
+	UFUNCTION(BlueprintNativeEvent, Category = "Sweet Dreams RPG|Battle Manager")
+	void LoadBattlers();
+	virtual void LoadBattlers_Implementation();
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
 	virtual void EndBattle(FName State = "None", float BlendTime = 2.0f);
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
-	virtual bool EvaluateEndBattle();
+	UFUNCTION(BlueprintNativeEvent, Category = "Sweet Dreams RPG|Battle Manager")
+	bool EvaluateEndBattle();
+	virtual bool EvaluateEndBattle_Implementation();
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
 	bool IsBattleOngoing() const;
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
@@ -90,7 +92,5 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
 	virtual void ChangeCameraFocus(AActor* NewFocus, float BlendTime = 1.0f);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
-	virtual void ChangeCameraFocusDelayed(AActor* NewFocus, float BlendTime = 1.0f, float DelayTime = 1.0f);
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
-	virtual void ChangeCameraView(ECameraFocus NewFocus, float BlendTime = 1.0f);
+	virtual void ChangeCameraView(ECameraView NewFocus, float BlendTime = 1.0f);
 };

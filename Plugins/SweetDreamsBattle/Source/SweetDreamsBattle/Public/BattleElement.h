@@ -40,15 +40,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
 	virtual void SetBattle(ASweetDreamsBattleManager* Battle);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
-	virtual void AddTarget(ABattleCharacter* Target);
+	virtual void AddTarget(ABattleCharacter* Target, bool bRemoveDead = true);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
 	virtual void RemoveTarget(ABattleCharacter* Target);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
-	virtual void SetTarget(TArray<ABattleCharacter*> NewTargets);
+	virtual void SetTarget(TArray<ABattleCharacter*> NewTargets, bool bRemoveDead = true);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
-	virtual void SetTargetRandom(TArray<ABattleCharacter*> PossibleTargets, int32 TargetAmount);
+	virtual void SetTargetRandom(TArray<ABattleCharacter*> PossibleTargets, int32 TargetAmount, bool bRemoveDead = true);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element")
-	virtual bool AreTargetsValid();
+	virtual bool UpdateValidTargets();
 	//
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Element", meta = (ReturnDisplayName = "All Targets Killed"))
 	virtual bool DamageTargets(TArray<ABattleCharacter*> Targets, float& PostMitigatedDamage, int32& KilledTargets, float Damage = 100.0f, bool bCanBeMitigated = true);

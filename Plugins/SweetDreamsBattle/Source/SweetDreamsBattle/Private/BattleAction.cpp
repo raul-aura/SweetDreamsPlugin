@@ -21,14 +21,15 @@ void UBattleAction::StartActionForced(bool bUseCooldown)
 		ATurnBasedBattle* TurnBattle = Cast<ATurnBasedBattle>(CurrentBattle);
 		if (TurnBattle)
 		{
-			TurnBattle->AddActionAuto(this, bAddedLast);
+			TurnBattle->AddTurnAction(this, !bAddedLast);
 			if (bUseCooldown)
 			{
 				RefreshCooldown();
 			}
 		}
-		TurnBattle->UpdatePossibleTargets(this);
-		SetTargetRandom(TurnBattle->GetPossibleTargets(), TargetAmount);
+		UBattleAction* ThisAction = this;
+		TurnBattle->GetTargetsAllPossible(ThisAction);
+		SetTargetRandom(ElementTargets, TargetAmount);
 		return;
 	}
 	OnActionStart();
@@ -101,7 +102,7 @@ void UBattleAction::EndAction(float Delay)
 		ATurnBasedBattle* TurnBattle = Cast<ATurnBasedBattle>(CurrentBattle);
 		if (TurnBattle && Owner)
 		{
-			Owner->GetWorldTimerManager().SetTimer(LocalTimer, TurnBattle, &ATurnBasedBattle::StartActionInOrder, Delay, false);
+			Owner->GetWorldTimerManager().SetTimer(LocalTimer, TurnBattle, &ATurnBasedBattle::StartTurnAction, Delay, false);
 		}
 	}
 	if (Owner)
@@ -150,6 +151,11 @@ int32 UBattleAction::GetTargetAmount() const
 bool UBattleAction::GetIfIncludeSelf() const
 {
 	return bIncludeSelf;
+}
+
+int32 UBattleAction::GetActionSpeed() const
+{
+	return ActionSpeed;
 }
 
 float UBattleAction::StartAnimation(UAnimSequence* Animation, TArray<ABattleCharacter*> Targets)

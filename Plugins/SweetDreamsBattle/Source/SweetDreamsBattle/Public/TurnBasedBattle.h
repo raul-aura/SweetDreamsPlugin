@@ -46,53 +46,30 @@ protected:
 	TArray<UBattleAction*> Actions;
 	TArray<int32> ActionOrder;
 	int32 CurrentAction = -1;
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
-	virtual void GetEnemyActions();
 	UPROPERTY(EditAnywhere, Category = "Battle Manager|Action", meta = (ClampMin = "0"))
 	float ActionDelay = 0.5f;
-	//
-	ABattleCharacter* AllyInput;
-	int32 CurrentAllyIndex;
-	TArray<ABattleCharacter*> AllyPossibleTargets;
-	TArray<ABattleCharacter*> AllyTargets;
-	UBattleAction* AllySelectedAction;
-
-	// TURN-ACTION ORDER
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
-	virtual void InitializeTurn();
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
-	virtual void EvaluateTurnStart();
 
 public:
 	// BATTLE
 	virtual void StartBattle(FName State = "None", float BlendTime = 2.0f) override;
-	virtual void LoadBattlers() override;
+	virtual void LoadBattlers_Implementation() override;
 	virtual void EndBattle(FName State = "None", float BlendTime = 2.0f) override;
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based", meta = (DisplayName = "Load and Spawn Battlers"))
-	virtual void LoadSpawnBattlers(TArray<TSoftClassPtr<ABattleCharacter>> Battlers, TArray<ABattleCharacter*>& BattlerGroup, TArray<FTransform> TransformGroup);
-	virtual void ChangeCameraView(ECameraFocus NewFocus, float BlendTime) override;
+	virtual void LoadSpawnBattlers(TArray<TSoftClassPtr<ABattleCharacter>> Battlers, UPARAM(ref) TArray<ABattleCharacter*>& BattlerGroup, TArray<FTransform> TransformGroup);
 	// ACTION
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
-	virtual void AllyInputStart(ABattleCharacter* Ally = nullptr);
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
-	virtual void AllySelectAction(UBattleAction* Action);
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
-	virtual void AllySelectTargets(TArray<ABattleCharacter*> Targets);
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
-	virtual void AllyActionConfirm();
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
-	virtual void AddActionAuto(UBattleAction* Action, bool bAddAsLast = true);
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
-	virtual bool IsActionValid(UBattleAction* Action);
-	virtual void UpdatePossibleTargets(UBattleAction* Action);
+	virtual bool IsActionValid(UBattleAction* Action) const;
 	// GETTERS
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
-	virtual ABattleCharacter* GetCurrentInputAlly() const;
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
-	virtual TArray<ABattleCharacter*> GetPossibleTargets() const;
-	// TURN-ACTION ORDER
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
-	virtual void StartActionInOrder();
+	virtual void GetTargetsAllPossible(UPARAM(ref) UBattleAction*& Action, bool bUpdateCameraView = false);
 
-
+	// NEW TURN-BASED COMBAT
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
+	virtual void StartTurn();
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
+	virtual void LoadTurnActions(TArray<ABattleCharacter*> Characters, bool bIsAlly);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
+	virtual void AddTurnAction(UBattleAction* Action, bool bIgnoreSpeed = false);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager|Turn-based")
+	virtual void StartTurnAction();
 };

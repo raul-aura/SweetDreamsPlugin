@@ -37,6 +37,8 @@ public:
 	virtual int32 GetTargetAmount() const;
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action|Target")
 	virtual bool GetIfIncludeSelf() const;
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Action")
+	virtual int32 GetActionSpeed() const;
 	//
 	virtual float StartAnimation(UAnimSequence* Animation, TArray<ABattleCharacter*> Targets) override;
 protected:
@@ -70,6 +72,8 @@ protected:
 	int32 CooldownTurns = 0;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Data", meta = (ClampMin = "0.1", ClampMax = "1"))
 	float PriorityWeigth = 1.0f;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams RPG|Data", meta = (ClampMin = "0", ClampMax = "9999", EditCondition = "bTurnBasedAction==true", EditConditionHides))
+	int32 ActionSpeed = 0;
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Sweet Dreams RPG|Settings")
 	bool bTurnBasedAction = false;
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Sweet Dreams RPG|Settings", meta = (DisplayName = "Is Last Action when Forced", EditCondition = "bTurnBasedAction==true", EditConditionHides))

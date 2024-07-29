@@ -63,7 +63,7 @@ void ASweetDreamsBattleManager::StartBattle(FName State, float BlendTime)
 	OnBattleStart();
 }
 
-void ASweetDreamsBattleManager::LoadBattlers() {}
+void ASweetDreamsBattleManager::LoadBattlers_Implementation() {}
 
 void ASweetDreamsBattleManager::EndBattle(FName State, float BlendTime)
 {
@@ -84,7 +84,7 @@ void ASweetDreamsBattleManager::EndBattle(FName State, float BlendTime)
 	OnBattleEnd(bIsVictorious);
 }
 
-bool ASweetDreamsBattleManager::EvaluateEndBattle()
+bool ASweetDreamsBattleManager::EvaluateEndBattle_Implementation()
 { 
 	if (Enemies.Num() > 0)
 	{
@@ -113,10 +113,7 @@ bool ASweetDreamsBattleManager::IsBattleVictorious() const
 
 void ASweetDreamsBattleManager::ChangeCameraFocus(AActor* NewFocus, float BlendTime)
 {
-	if (!Player)
-	{
-		return;
-	}
+	if (!Player || NewFocus) return;
 	if (BlendTime < 0.0f)
 	{
 		BlendTime = BattlerBlendTime;
@@ -124,19 +121,13 @@ void ASweetDreamsBattleManager::ChangeCameraFocus(AActor* NewFocus, float BlendT
 	Player->SetViewTargetWithBlend(NewFocus, BlendTime);
 }
 
-void ASweetDreamsBattleManager::ChangeCameraFocusDelayed(AActor* NewFocus, float BlendTime, float DelayTime)
+void ASweetDreamsBattleManager::ChangeCameraView(ECameraView NewFocus, float BlendTime)
 {
-	if (DelayTime <= 0.0f)
+	if (NewFocus == ECameraView::Self)
 	{
-		DelayTime = GetWorld()->GetDeltaSeconds();
+		ChangeCameraFocus(nullptr, BlendTime);
+		return;
 	}
-	FTimerDelegate TimerDel;
-	TimerDel.BindUFunction(this, FName("ChangeCameraFocus"), NewFocus, BlendTime);
-	GetWorldTimerManager().SetTimer(BattleTimer, TimerDel, DelayTime, false);
-}
-
-void ASweetDreamsBattleManager::ChangeCameraView(ECameraFocus NewFocus, float BlendTime)
-{
 	ChangeCameraFocus(this, BattlerBlendTime);
 	int32 Index = static_cast<int32>(NewFocus);
 	if (Index <= MulticameraComponent->GetAllPossibleViews().Num() - 1)

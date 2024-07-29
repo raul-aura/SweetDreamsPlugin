@@ -55,6 +55,16 @@ float UBattlerDataComponent::GetResistence() const
 	return Resistence + GetModifiers(ResistenceModifiers, Resistence, ResistenceMultiplier);
 }
 
+int32 UBattlerDataComponent::GetSpeed() const
+{
+	return Speed;
+}
+
+int32 UBattlerDataComponent::GetAdditionalActions() const
+{
+	return AdditionalActions;
+}
+
 int32 UBattlerDataComponent::AddModifier(TArray<float>& Modifiers, float ModifierToAdd)
 {
 	if (ModifierToAdd < 0.0f) return -1;

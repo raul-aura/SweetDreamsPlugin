@@ -23,12 +23,16 @@ protected:
 	// PARAMS
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Params")
 	int32 Level;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Params", meta = (DisplayName = "Base Health", ClampMin = "0"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Params", meta = (DisplayName = "Base Health", ClampMin = "1"))
 	float Health = 100;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Params", meta = (ClampMin = "0"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Params", meta = (ClampMin = "1"))
 	float Force = 10;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Params", meta = (ClampMin = "0"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Params", meta = (ClampMin = "1"))
 	float Resistence = 10;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Params", meta = (ClampMin = "1"))
+	int32 Speed = 1;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Params", meta = (ClampMin = "0", ClampMax = "99"))
+	int32 AdditionalActions = 0;
 	//
 	UPROPERTY(BlueprintReadWrite, Category = "Params")
 	float CurrentHealth;
@@ -37,11 +41,11 @@ protected:
 	//
 	TArray<UBattleState*> States;
 	// MULTIPLIERS
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Multipliers", meta = (Units = "%", ClampMin = "0"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Multipliers", meta = (Units = "%", ClampMin = "1"))
 	float HealthMultiplier = 100;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Multipliers", meta = (Units = "%", ClampMin = "0"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Multipliers", meta = (Units = "%", ClampMin = "1"))
 	float ForceMultiplier = 100;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Multipliers", meta = (Units = "%", ClampMin = "0"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Multipliers", meta = (Units = "%", ClampMin = "1"))
 	float ResistenceMultiplier = 100;
 	// MODIFIERS
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Modifiers")
@@ -66,6 +70,10 @@ public:
 	virtual float GetForce() const;
 	UFUNCTION(BlueprintCallable)
 	virtual float GetResistence() const;
+	UFUNCTION(BlueprintCallable)
+	virtual int32 GetSpeed() const;
+	UFUNCTION(BlueprintCallable)
+	virtual int32 GetAdditionalActions() const;
 	UFUNCTION(BlueprintCallable, meta = (ReturnDisplayName = "Added to Index"))
 	virtual int32 AddModifier(UPARAM(ref) TArray<float>& Modifiers, float ModifierToAdd = 10.0f);
 	UFUNCTION(BlueprintCallable, meta = (ReturnDisplayName = "Found and Updated"))

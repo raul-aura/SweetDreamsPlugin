@@ -43,11 +43,15 @@ void UBattleElement::SetBattle(ASweetDreamsBattleManager* Battle)
 	CurrentBattle = Battle;
 }
 
-void UBattleElement::AddTarget(ABattleCharacter* Target)
+void UBattleElement::AddTarget(ABattleCharacter* Target, bool bRemoveDead)
 {
 	if (!ElementTargets.Contains(Target))
 	{
 		ElementTargets.Add(Target);
+	}
+	if (bRemoveDead)
+	{
+		UpdateValidTargets();
 	}
 }
 
@@ -59,32 +63,34 @@ void UBattleElement::RemoveTarget(ABattleCharacter* Target)
 	}
 }
 
-void UBattleElement::SetTarget(TArray<ABattleCharacter*> NewTargets)
+void UBattleElement::SetTarget(TArray<ABattleCharacter*> NewTargets, bool bRemoveDead)
 {
 	ElementTargets.Empty();
 	ElementTargets = NewTargets;
+	if (bRemoveDead)
+	{
+		UpdateValidTargets();
+	}
 }
 
-void UBattleElement::SetTargetRandom(TArray<ABattleCharacter*> PossibleTargets, int32 TargetAmount)
+void UBattleElement::SetTargetRandom(TArray<ABattleCharacter*> PossibleTargets, int32 TargetAmount, bool bRemoveDead)
 {
-	if (PossibleTargets.Num() == 0 || TargetAmount <= 0)
-	{
-		return;
-	}
+	if (PossibleTargets.Num() == 0 || TargetAmount <= 0) return;
 	ElementTargets.Empty();
 	int32 RandomIndex = FMath::RandRange(0, PossibleTargets.Num() - 1);
 	for (int32 i = 0; i < TargetAmount; i++)
 	{
 		AddTarget(PossibleTargets[RandomIndex]);
 	}
+	if (bRemoveDead)
+	{
+		UpdateValidTargets();
+	}
 }
 
-bool UBattleElement::AreTargetsValid()
+bool UBattleElement::UpdateValidTargets()
 {
-	if (ElementTargets.Num() == 0)
-	{
-		return false;
-	}
+	if (ElementTargets.Num() == 0) return false;
 	for (ABattleCharacter* Target : ElementTargets)
 	{
 		if (Target)
