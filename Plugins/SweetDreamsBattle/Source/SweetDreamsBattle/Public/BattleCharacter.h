@@ -49,29 +49,29 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Character")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual FText GetCharacterName() const;
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Character")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual void SetCharacterName(FText NewName);
 	// DATA
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Character")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual UBattlerDataComponent* GetBattlerParameters() const;
 	// ACTION
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Character")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual UBattleAction* GetRandomAction() const;
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Character")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual TArray<UBattleAction*> GetAllActions() const;
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Character")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual void UpdateActionsCooldown();
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Character")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual void ResetActions();
 	// STATE
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Character")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual void AddState(TSubclassOf<UBattleState> State, ABattleCharacter* StateInstigator);
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Character")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual void RemoveState(TSubclassOf<UBattleState> State);
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Character")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual int32 RemoveAllStates();
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Character")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual TArray<UBattleState*> GetAllStates() const;
 };

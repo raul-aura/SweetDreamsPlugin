@@ -86,19 +86,44 @@ void ASweetDreamsBattleManager::EndBattle(FName State, float BlendTime)
 
 bool ASweetDreamsBattleManager::EvaluateEndBattle_Implementation()
 { 
+	bool bAllEnemiesDead = true;
+	bool bAllAlliesDead = true;
 	if (Enemies.Num() > 0)
 	{
 		for (ABattleCharacter* Enemy : Enemies)
 		{
 			if (!Enemy->GetBattlerParameters()->IsDead())
 			{
-				return false;
+				bAllEnemiesDead = false;
+				break;
 			}
 		}
 	}
-	bIsVictorious = true;
-	EndBattle();
-	return bIsVictorious;
+	if (Allies.Num() > 0)
+	{
+		for (ABattleCharacter* Ally : Allies)
+		{
+			if (!Ally->GetBattlerParameters()->IsDead())
+			{
+				bAllAlliesDead = false;
+				break;
+			}
+		}
+	}
+	if (bAllEnemiesDead || bAllAlliesDead)
+	{
+		if (bAllEnemiesDead)
+		{
+			bIsVictorious = true;
+		}
+		else
+		{
+			bIsVictorious = false;
+		}
+		EndBattle();
+		return true;
+	}
+	return false;
 }
 
 bool ASweetDreamsBattleManager::IsBattleOngoing() const
@@ -113,7 +138,7 @@ bool ASweetDreamsBattleManager::IsBattleVictorious() const
 
 void ASweetDreamsBattleManager::ChangeCameraFocus(AActor* NewFocus, float BlendTime)
 {
-	if (!Player || NewFocus) return;
+	if (!Player || !NewFocus) return;
 	if (BlendTime < 0.0f)
 	{
 		BlendTime = BattlerBlendTime;
@@ -121,18 +146,23 @@ void ASweetDreamsBattleManager::ChangeCameraFocus(AActor* NewFocus, float BlendT
 	Player->SetViewTargetWithBlend(NewFocus, BlendTime);
 }
 
-void ASweetDreamsBattleManager::ChangeCameraView(ECameraView NewFocus, float BlendTime)
+void ASweetDreamsBattleManager::ChangeCameraView(ECameraView NewView, AActor* SelfFocus, float BlendTime)
 {
-	if (NewFocus == ECameraView::Self)
+	int32 Index = static_cast<int32>(NewView);
+	if (!SelfFocus)
 	{
-		ChangeCameraFocus(nullptr, BlendTime);
-		return;
+		SelfFocus = this;
 	}
-	ChangeCameraFocus(this, BattlerBlendTime);
-	int32 Index = static_cast<int32>(NewFocus);
-	if (Index <= MulticameraComponent->GetAllPossibleViews().Num() - 1)
+	if (!(NewView == ECameraView::Self))
 	{
-		MulticameraComponent->SetNewCameraView(Index, BlendTime);
+		SelfFocus = this;
+		Index = 1;
+	}
+	ChangeCameraFocus(SelfFocus, BlendTime);
+	UMulticameraComponent* Multicamera = SelfFocus->FindComponentByClass<UMulticameraComponent>();
+	if (Multicamera && Index <= Multicamera->GetAllPossibleViews().Num() - 1)
+	{
+		Multicamera->SetNewCameraView(Index, BlendTime);
 	}
 }
 

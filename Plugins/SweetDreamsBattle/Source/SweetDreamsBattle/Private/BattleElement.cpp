@@ -285,8 +285,12 @@ float UBattleElement::StartAnimation(UAnimSequence* Animation, TArray<ABattleCha
 			{
 				if (Mesh->GetAnimationMode() == EAnimationMode::AnimationBlueprint)
 				{
+					float PlayLength = Animation->GetPlayLength();
 					FTimerHandle AnimTimer;
-					GetWorld()->GetTimerManager().SetTimer(AnimTimer, Animation->GetPlayLength(), false); // add function to return to animationblueprint mode
+					GetWorld()->GetTimerManager().SetTimer(AnimTimer, [Mesh]()
+						{
+							Mesh->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+						}, PlayLength, false);
 				}
 				Mesh->PlayAnimation(Animation, false);
 			}

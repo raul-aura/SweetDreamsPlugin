@@ -45,6 +45,11 @@ float UBattlerDataComponent::GetHealth() const
 	return CurrentHealth + GetModifiers(HealthModifiers, CurrentHealth, HealthMultiplier);
 }
 
+float UBattlerDataComponent::GetMana() const
+{
+	return CurrentMana;
+}
+
 float UBattlerDataComponent::GetForce() const
 {
 	return Force + GetModifiers(ForceModifiers, Force, ForceMultiplier);
@@ -118,6 +123,7 @@ bool UBattlerDataComponent::RemoveModifierAt(TArray<float>& Modifiers, int32 Ind
 
 float UBattlerDataComponent::ReceiveDamage(float Damage, bool bCanBeMitigated)
 {
+	if (Damage < 0) Damage *= -1;
 	float FinalDamage = Damage;
 	if (bCanBeMitigated)
 	{
@@ -134,9 +140,23 @@ float UBattlerDataComponent::ReceiveDamage(float Damage, bool bCanBeMitigated)
 
 float UBattlerDataComponent::ReceiveHeal(float Heal)
 {
+	if (Heal < 0) Heal *= -1;
 	float HealedAmount = FMath::Clamp(Heal, 0.0f, (Health - CurrentHealth));
 	CurrentHealth += HealedAmount;
 	return HealedAmount;
+}
+
+float UBattlerDataComponent::ReceiveManaConsume(float Consume)
+{
+	if (Consume < CurrentMana || Consume == 0) return CurrentMana;
+	if (Consume < 0) Consume *= -1;
+	CurrentMana = FMath::Clamp(CurrentMana - Consume, 0.0f, Mana);
+	return CurrentMana;
+}
+
+float UBattlerDataComponent::ReceiveManaRestore(float Restore)
+{
+	return 0.0f;
 }
 
 void UBattlerDataComponent::GetMitigatedDamage_Implementation(float& Mitigated)

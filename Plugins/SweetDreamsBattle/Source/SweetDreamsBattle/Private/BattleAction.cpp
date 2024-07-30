@@ -130,8 +130,8 @@ void UBattleAction::ResetAction()
 
 bool UBattleAction::IsActionAvailable() const
 {
-	//Owner->GetResource()
-	if (Cost > 0 || bIsOnCooldown)
+	float Mana = GetOwner()->GetBattlerParameters()->GetMana();
+	if (Cost > Mana || bIsOnCooldown)
 	{
 		return false;
 	}
@@ -155,7 +155,17 @@ bool UBattleAction::GetIfIncludeSelf() const
 
 int32 UBattleAction::GetActionSpeed() const
 {
-	return ActionSpeed;
+	return (bOverrideOwnerSpeed) ? ActionSpeed : GetOwner()->GetBattlerParameters()->GetSpeed();
+}
+
+void UBattleAction::SetActionSpeed(int32 NewSpeed)
+{
+	ActionSpeed = NewSpeed;
+}
+
+float UBattleAction::GetActionCost() const
+{
+	return Cost;
 }
 
 float UBattleAction::StartAnimation(UAnimSequence* Animation, TArray<ABattleCharacter*> Targets)

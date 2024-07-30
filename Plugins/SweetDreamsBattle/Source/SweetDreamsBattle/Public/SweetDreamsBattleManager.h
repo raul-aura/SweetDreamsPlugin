@@ -40,9 +40,9 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "Battle Manager")
 	bool bIsVictorious = true;
 	//
-	UFUNCTION(BlueprintImplementableEvent, Category = "Sweet Dreams RPG|Battle Manager")
+	UFUNCTION(BlueprintImplementableEvent, Category = "Sweet Dreams|RPG|Battle Manager")
 	void OnBattleStart();
-	UFUNCTION(BlueprintImplementableEvent, Category = "Sweet Dreams RPG|Battle Manager")
+	UFUNCTION(BlueprintImplementableEvent, Category = "Sweet Dreams|RPG|Battle Manager")
 	void OnBattleEnd(bool bBattleVictorious);
 
 	// COMPONENTS
@@ -74,23 +74,23 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Battle Manager")
 	virtual void StartBattle(FName State = "None", float BlendTime = 2.0f);
-	UFUNCTION(BlueprintNativeEvent, Category = "Sweet Dreams RPG|Battle Manager")
+	UFUNCTION(BlueprintNativeEvent, Category = "Sweet Dreams|RPG|Battle Manager")
 	void LoadBattlers();
 	virtual void LoadBattlers_Implementation();
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Battle Manager")
 	virtual void EndBattle(FName State = "None", float BlendTime = 2.0f);
-	UFUNCTION(BlueprintNativeEvent, Category = "Sweet Dreams RPG|Battle Manager")
+	UFUNCTION(BlueprintNativeEvent, Category = "Sweet Dreams|RPG|Battle Manager", meta = (ReturnDisplayName = "Battle Ended"))
 	bool EvaluateEndBattle();
 	virtual bool EvaluateEndBattle_Implementation();
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Battle Manager")
 	bool IsBattleOngoing() const;
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Battle Manager")
 	bool IsBattleVictorious() const;
 	//
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Battle Manager")
 	virtual void ChangeCameraFocus(AActor* NewFocus, float BlendTime = 1.0f);
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams RPG|Battle Manager")
-	virtual void ChangeCameraView(ECameraView NewFocus, float BlendTime = 1.0f);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Battle Manager", meta = (ToolTip = "When New View is Self and Actor Self Focus is valid, it will blend with the Camera Transform on Index 1 of the Actor instead."))
+	virtual void ChangeCameraView(ECameraView NewView = ECameraView::AllBattlers, AActor* SelfFocus = nullptr, float BlendTime = 1.0f);
 };

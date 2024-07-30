@@ -25,6 +25,8 @@ protected:
 	int32 Level;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Params", meta = (DisplayName = "Base Health", ClampMin = "1"))
 	float Health = 100;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Params", meta = (DisplayName = "Base Mana", ClampMin = "1"))
+	float Mana = 100;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Params", meta = (ClampMin = "1"))
 	float Force = 10;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Params", meta = (ClampMin = "1"))
@@ -36,6 +38,8 @@ protected:
 	//
 	UPROPERTY(BlueprintReadWrite, Category = "Params")
 	float CurrentHealth;
+	UPROPERTY(BlueprintReadWrite, Category = "Params")
+	float CurrentMana;
 	UPROPERTY(BlueprintReadWrite, Category = "Params")
 	bool bIsDead = false;
 	//
@@ -67,6 +71,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual float GetHealth() const;
 	UFUNCTION(BlueprintCallable)
+	virtual float GetMana() const;
+	UFUNCTION(BlueprintCallable)
 	virtual float GetForce() const;
 	UFUNCTION(BlueprintCallable)
 	virtual float GetResistence() const;
@@ -89,6 +95,10 @@ public:
 	virtual float ReceiveDamage(float Damage, bool bCanBeMitigated);
 	UFUNCTION(BlueprintCallable)
 	virtual float ReceiveHeal(float Heal);
+	UFUNCTION(BlueprintCallable)
+	virtual float ReceiveManaConsume(float Consume);
+	UFUNCTION(BlueprintCallable)
+	virtual float ReceiveManaRestore(float Restore);
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void GetMitigatedDamage(float& Mitigated);
 	virtual void GetMitigatedDamage_Implementation(float& Mitigated);

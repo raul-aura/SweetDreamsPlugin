@@ -15,11 +15,11 @@ class SWEETDREAMSBATTLE_API UTurnBasedBattleWidget : public UUserWidget
 	
 public:
 
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void ShowPlayerInput();
 	UFUNCTION(BlueprintCallable)
 	void ShowPlayerInputDelayed(float Delay = 1.0f);
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void HidePlayerInput();
 
 	UFUNCTION(BlueprintCallable)

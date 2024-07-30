@@ -2,6 +2,7 @@
 
 
 #include "TurnBasedBattle.h"
+#include "BattleInputAction.h"
 #include "Kismet/GameplayStatics.h"
 
 ATurnBasedBattle::ATurnBasedBattle()
@@ -62,6 +63,11 @@ void ATurnBasedBattle::LoadSpawnBattlers(TArray<TSoftClassPtr<ABattleCharacter>>
 				{
 					SpawnedBattler->SetActorLabel(NewName.ToString());
 				}
+				TArray<UBattleAction*> BattlerAction;
+				for (UBattleAction* Action : BattlerAction)
+				{
+					Action->SetBattle(this);
+				}
 				BattlerGroup.Add(SpawnedBattler);
 			}
 		}
@@ -76,14 +82,10 @@ void ATurnBasedBattle::LoadSpawnBattlers(TArray<TSoftClassPtr<ABattleCharacter>>
 	}
 }
 
-bool ATurnBasedBattle::IsActionValid(UBattleAction* Action) const
+UTurnBasedBattleWidget* ATurnBasedBattle::GetTurnBattleWidget() const
 {
-	if (!Action) return false;
-	ABattleCharacter* ActionOwner = Action->GetOwner();
-	if (!ActionOwner) return false;
-	return !ActionOwner->GetBattlerParameters()->IsDead() && !ActionOwner->IsPendingKill() && Action->UpdateValidTargets();
+	return TurnBattleWidget;
 }
-
 
 void ATurnBasedBattle::GetTargetsAllPossible(UBattleAction*& Action, bool bUpdateCameraView)
 {
@@ -129,7 +131,7 @@ void ATurnBasedBattle::GetTargetsAllPossible(UBattleAction*& Action, bool bUpdat
 	if (bUpdateCameraView)
 	{
 		ECameraView NewView = StaticCast<ECameraView>(ViewIndex);
-		ChangeCameraView(NewView, BattlerBlendTime);
+		ChangeCameraView(NewView, Action->GetOwner(), BattlerBlendTime);
 	}
 }
 
@@ -152,7 +154,8 @@ void ATurnBasedBattle::StartTurn()
 	CurrentAction = 0;
 	Actions.Empty();
 	LoadTurnActions(Allies, true);
-	LoadTurnActions(Enemies, true);
+	LoadTurnActions(Enemies, false);
+	StartTurnAction();
 }
 
 void ATurnBasedBattle::LoadTurnActions(TArray<ABattleCharacter*> Battlers, bool bIsAlly)
@@ -168,7 +171,10 @@ void ATurnBasedBattle::LoadTurnActions(TArray<ABattleCharacter*> Battlers, bool 
 		{
 			if (bIsAlly)
 			{
-				UBattleAction* InputAction = NewObject<UBattleAction>(UBattleAction::StaticClass()); // change static class to InputAction
+				UBattleInputAction* InputAction = NewObject<UBattleInputAction>(Battler, UBattleInputAction::StaticClass());
+				InputAction->SetWidget(TurnBattleWidget);
+				InputAction->SetBattle(this);
+				InputAction->SetOwner(Battler);
 				AddTurnAction(InputAction, true);
 			}
 			else
@@ -176,7 +182,6 @@ void ATurnBasedBattle::LoadTurnActions(TArray<ABattleCharacter*> Battlers, bool 
 				UBattleAction* EnemyAction = Battler->GetRandomAction();
 				if (EnemyAction)
 				{
-					EnemyAction->SetBattle(this);
 					EnemyAction->SetTargetRandom(Allies, EnemyAction->GetTargetAmount());
 					AddTurnAction(EnemyAction);
 				}
@@ -187,12 +192,22 @@ void ATurnBasedBattle::LoadTurnActions(TArray<ABattleCharacter*> Battlers, bool 
 
 void ATurnBasedBattle::AddTurnAction(UBattleAction* Action, bool bIgnoreSpeed)
 {
-	if (!IsActionValid(Action)) return;
-	Actions.Add(Action);
-	if (!bIgnoreSpeed)
+	if (!Action) return;
+	Action->GetOwner()->GetBattlerParameters()->ReceiveManaConsume(Action->GetActionCost());
+	if (bIgnoreSpeed)
 	{
-		int32 ActionSpeed = Action->GetOwner()->GetBattlerParameters()->GetSpeed(); // convert speed into order.
+		Actions.Add(Action);
+		return;
 	}
+	int32 InsertIndex = 0;
+	for (; InsertIndex < Actions.Num(); ++InsertIndex)
+	{
+		if (Action->GetActionSpeed() >= Actions[InsertIndex]->GetActionSpeed())
+		{
+			break;
+		}
+	}
+	Actions.Insert(Action, InsertIndex);
 }
 
 void ATurnBasedBattle::StartTurnAction()
@@ -204,7 +219,7 @@ void ATurnBasedBattle::StartTurnAction()
 		return;
 	}
 	UBattleAction* CurrentActionRef = Actions[CurrentAction++];
-	// get owner of currentactionref and store somewhere to change camera view to owner when Self
+	CurrentActionBattler = CurrentActionRef->GetOwner();
 	ChangeCameraFocus(CurrentActionRef->GetOwner(), BattlerBlendTime);
 	FTimerHandle LocalHandle;
 	FTimerDelegate TimerDel;
