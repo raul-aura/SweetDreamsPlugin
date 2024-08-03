@@ -23,6 +23,10 @@ class SWEETDREAMSBATTLE_API UBattleState : public UBattleElement
 protected:
 	UPROPERTY(BlueprintReadOnly)
 	ABattleCharacter* StateInstigator = nullptr;
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|State")
+	virtual ABattleCharacter* GetStateInstigator() const;
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|State")
+	virtual TArray<ABattleCharacter*> GetInstigatorAsArray() const;
 
 	// STACKS
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
@@ -56,32 +60,32 @@ protected:
 
 public:
 	// EVENTS
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Sweet Dreams|RPG|State")
 	void OnApplied();
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Sweet Dreams|RPG|State")
 	void OnTurnStart();
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Sweet Dreams|RPG|State")
 	void OnActionEnd();
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Sweet Dreams|RPG|State")
 	void OnTick();
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Sweet Dreams|RPG|State")
 	void OnRemoved();
 	//
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|State")
 	virtual void ApplyState(ABattleCharacter* Instigator);
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|State")
 	virtual void ResetLifetime();
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|State")
 	virtual void AddStacks();
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|State")
 	virtual void ConsumeStacks();
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|State")
 	virtual void ConsumeLifetime(EStateLifetime LifetimeToConsume = EStateLifetime::Action);
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|State")
 	virtual void RemoveState();
 	// GETTERS
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|State")
 	virtual int32 GetRemainingLifetime() const;
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|State")
 	virtual float GetRemainingLifetimeSeconds() const;
 };

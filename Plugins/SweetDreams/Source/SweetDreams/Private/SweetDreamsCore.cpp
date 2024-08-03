@@ -56,8 +56,9 @@ void USweetDreamsCore::Deinitialize()
 }
 
 // Debug
-void USweetDreamsCore::PrintDream(UObject* DreamOrigin, FString Dream, EPrintType Severity, float Duration)
+void USweetDreamsCore::PrintDream(const UObject* DreamOrigin, FString Dream, EPrintType Severity, float Duration)
 {
+	if (!(CoreSettings->DebugFlags & static_cast<uint8>(EDebugFlags::PrintEnabled))) return;
 	FString Origin = "[SweetDreams]";
 	if (DreamOrigin)
 	{
@@ -77,7 +78,7 @@ void USweetDreamsCore::PrintDream(UObject* DreamOrigin, FString Dream, EPrintTyp
 		DreamColor = FColor(216, 29, 29);
 		break;
 	}
-	UE_LOG(LogActor, Display, TEXT("%s"), *Dream);
+	UE_LOG(LogCore, Display, TEXT("%s"), *Dream);
 	if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, Duration, DreamColor, Dream);
@@ -104,13 +105,19 @@ bool USweetDreamsCore::CreateSave(TSubclassOf<USweetDreamsSaveFile> SaveClass, b
 	FString SaveName = bIsPersistent ? "Persistent Save" : "Local Save";
 	if (UGameplayStatics::DoesSaveGameExist(SaveSlot, 0))
 	{
-		PrintDream(nullptr, FString::Printf(TEXT("%s ALREADY EXISTS and WILL NOT be created again."), *SaveName));
+		if (CoreSettings->DebugFlags & static_cast<uint8>(EDebugFlags::PrintSaveOperations))
+		{
+			PrintDream(nullptr, FString::Printf(TEXT("%s ALREADY EXISTS and WILL NOT be created again."), *SaveName));
+		}
 		return false;
 	}
 	USaveGame* SaveObject = UGameplayStatics::CreateSaveGameObject(SaveClass);
 	if (SaveObject)
 	{
-		PrintDream(nullptr, FString::Printf(TEXT("%s CREATED with SUCCESS."), *SaveName));
+		if (CoreSettings->DebugFlags & static_cast<uint8>(EDebugFlags::PrintSaveOperations))
+		{
+			PrintDream(nullptr, FString::Printf(TEXT("%s CREATED with SUCCESS."), *SaveName));
+		}
 		if (bIsPersistent)
 		{
 			SavePersistentRef = Cast<USweetDreamsSavePersistent>(SaveObject);
@@ -123,7 +130,10 @@ bool USweetDreamsCore::CreateSave(TSubclassOf<USweetDreamsSaveFile> SaveClass, b
 		}
 		return true;
 	}
-	PrintDream(nullptr, FString::Printf(TEXT("%s NOT CREATED. %s reference will be NULL."), *SaveName));
+	if (CoreSettings->DebugFlags & static_cast<uint8>(EDebugFlags::PrintSaveOperations))
+	{
+		PrintDream(nullptr, FString::Printf(TEXT("%s NOT CREATED. %s reference will be NULL."), *SaveName));
+	}
 	return false;
 }
 
@@ -133,11 +143,17 @@ bool USweetDreamsCore::Save(USweetDreamsSaveFile* SaveObject, bool bIsPersistent
 	FString SaveName = bIsPersistent ? "Persistent Save" : "Local Save";
 	if (UGameplayStatics::SaveGameToSlot(SaveObject, SaveSlot, 0))
 	{
-		PrintDream(nullptr, FString::Printf(TEXT("%s SAVED with SUCCESS."), *SaveName));
+		if (CoreSettings->DebugFlags & static_cast<uint8>(EDebugFlags::PrintSaveOperations))
+		{
+			PrintDream(nullptr, FString::Printf(TEXT("%s SAVED with SUCCESS."), *SaveName));
+		}
 		ManageSaveData(true, bIsPersistent);
 		return true;
 	}
-	PrintDream(nullptr, FString::Printf(TEXT("%s FAILED to SAVE."), *SaveName));
+	if (CoreSettings->DebugFlags & static_cast<uint8>(EDebugFlags::PrintSaveOperations))
+	{
+		PrintDream(nullptr, FString::Printf(TEXT("%s FAILED to SAVE."), *SaveName));
+	}
 	return false;
 }
 
@@ -147,7 +163,10 @@ USweetDreamsSaveFile* USweetDreamsCore::LoadSave(bool bIsPersistent)
 	FString SaveName = bIsPersistent ? "Persistent Save" : "Local Save";
 	if (USaveGame* SaveObject = UGameplayStatics::LoadGameFromSlot(SaveSlot, 0))
 	{
-		PrintDream(nullptr, FString::Printf(TEXT("%s LOADED and returned with SUCCESS."), *SaveName));
+		if (CoreSettings->DebugFlags & static_cast<uint8>(EDebugFlags::PrintSaveOperations))
+		{
+			PrintDream(nullptr, FString::Printf(TEXT("%s LOADED and returned with SUCCESS."), *SaveName));
+		}
 		if (bIsPersistent)
 		{
 			SavePersistentRef = Cast<USweetDreamsSavePersistent>(SaveObject);
@@ -161,7 +180,10 @@ USweetDreamsSaveFile* USweetDreamsCore::LoadSave(bool bIsPersistent)
 			return SaveLocalRef;
 		}
 	}
-	PrintDream(nullptr, FString::Printf(TEXT("%s FAILED to LOAD."), *SaveName));
+	if (CoreSettings->DebugFlags & static_cast<uint8>(EDebugFlags::PrintSaveOperations))
+	{
+		PrintDream(nullptr, FString::Printf(TEXT("%s FAILED to LOAD."), *SaveName));
+	}
 	return nullptr;
 }
 

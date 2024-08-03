@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "TimerManager.h"
 #include "BattleElement.h"
+#include "LevelSequence.h"
 #include "BattleAction.generated.h"
 
 class ASweetDreamsBattleManager;
@@ -45,11 +46,18 @@ public:
 	virtual float GetActionCost() const;
 	//
 	virtual float StartAnimation(UAnimSequence* Animation, TArray<ABattleCharacter*> Targets) override;
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Action")
+	virtual void MoveToTarget(ABattleCharacter* Target);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Action")
+	virtual void ReturnToPosition();
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Action")
+	virtual void PlayLevelSequence(ULevelSequence* Sequence);
 protected:
+	FTransform OwnerTransform;
 	// ACTION CONTROL
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void OnActionStart();
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void OnActionEnd();
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Action")
 	virtual void EndAction(float Delay = 1.0f);

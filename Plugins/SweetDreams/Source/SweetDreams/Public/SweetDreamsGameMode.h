@@ -12,8 +12,6 @@ class USweetDreamsCore;
 class ASweetDreamsState;
 struct FDreamUserSettings;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGetUserSettingsSignature, FDreamUserSettings, Settings);
-
 UCLASS()
 class SWEETDREAMS_API ASweetDreamsGameMode : public AGameModeBase
 {
@@ -23,20 +21,22 @@ public:
 	virtual void BeginPlay() override;
 
 	// STATE
-	
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Core|Game Mode")
 	ASweetDreamsState* GetStateByName(FName StateName) const;
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Core|Game Mode")
 	ASweetDreamsState* GetStateByIndex(int32 Index) const;
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Core|Game Mode")
 	void StartState(ASweetDreamsState* State);
-
-	UPROPERTY(BlueprintAssignable)
-	FGetUserSettingsSignature GetUserSettingsDelegate;
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Core|Game Mode", meta = (DisplayName = "Create And Add State", ReturnDisplayName = "Success"))
+	bool CreateAddState(TSubclassOf<ASweetDreamsState> StateClass);
 
 protected:
-	USweetDreamsCore* Core;
+	UPROPERTY()
+	USweetDreamsCore* Core = nullptr;
 
 	// STATE
+	UPROPERTY(BlueprintReadWrite, Category = "States")
 	TArray<ASweetDreamsState*> DreamStates;
+	UPROPERTY(BlueprintReadOnly, Category = "States")
 	ASweetDreamsState* CurrentState;
 };

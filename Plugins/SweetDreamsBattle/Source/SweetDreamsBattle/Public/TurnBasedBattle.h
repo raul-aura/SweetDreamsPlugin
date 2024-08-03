@@ -28,7 +28,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly, EditInstanceOnly, Category = "Battlers")
 	TArray<ABattleCharacter*> AllBattlers;
 	UPROPERTY(VisibleAnywhere, Category = "Components")
-	USceneComponent* PlayerRoot; 
+	USceneComponent* AllyRoot; 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USceneComponent* EnemyRoot;
 	//
@@ -48,6 +48,8 @@ protected:
 	// ACTION
 	UPROPERTY(BlueprintReadOnly)
 	TArray<UBattleAction*> Actions;
+	UPROPERTY(BlueprintReadOnly, EditAnywhere)
+	TSubclassOf<UBattleInputAction> InputActionClass;
 	UPROPERTY(BlueprintReadOnly)
 	int32 CurrentAction = 0;
 	UPROPERTY(BlueprintReadWrite)

@@ -18,7 +18,10 @@ void ASweetDreamsState::StartState_Implementation()
 {
 	if (CoreState)
 	{
-		CoreState->PrintDream(this, FString::Printf(TEXT("%s State INITIALIZED."), *GetStateName().ToString()));
+		if (CoreState->CoreSettings->DebugFlags & static_cast<uint8>(EDebugFlags::PrintStateOperations))
+		{
+			CoreState->PrintDream(this, FString::Printf(TEXT("%s State INITIALIZED."), *GetStateName().ToString()));
+		}
 	}
 }
 

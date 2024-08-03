@@ -10,6 +10,17 @@
 
 class ASweetDreamsState;
 
+UENUM(BlueprintType, meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
+enum class EDebugFlags : uint8
+{
+	NONE = 0 UMETA(Hidden),
+	PrintEnabled = 1 << 0,
+	PrintSaveOperations = 1 << 1,
+	PrintStateOperations = 1 << 2,
+	PrintStateCreated = 1 << 3,
+};
+ENUM_CLASS_FLAGS(EDebugFlags)
+
 UCLASS(Config = Game, defaultconfig, meta = (DisplayName = "Sweet Dreams Core"))
 class SWEETDREAMS_API USweetDreamsSettings : public UDeveloperSettings
 {
@@ -17,6 +28,10 @@ class SWEETDREAMS_API USweetDreamsSettings : public UDeveloperSettings
 	
 public: 
 	USweetDreamsSettings();
+
+	// DEBUG
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Game|Debug", meta = (Bitmask, BitmaskEnum = EDebugFlags))
+	int32 DebugFlags;
 
 	// GAME
 	

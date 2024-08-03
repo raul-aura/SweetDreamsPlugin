@@ -7,8 +7,8 @@
 
 ATurnBasedBattle::ATurnBasedBattle()
 {
-	PlayerRoot = CreateDefaultSubobject<USceneComponent>(TEXT("Players"));
-	PlayerRoot->SetupAttachment(BattleRoot);
+	AllyRoot = CreateDefaultSubobject<USceneComponent>(TEXT("Allies"));
+	AllyRoot->SetupAttachment(BattleRoot);
 
 	EnemyRoot = CreateDefaultSubobject<USceneComponent>(TEXT("Enemies"));
 	EnemyRoot->SetupAttachment(BattleRoot);
@@ -63,11 +63,6 @@ void ATurnBasedBattle::LoadSpawnBattlers(TArray<TSoftClassPtr<ABattleCharacter>>
 				{
 					SpawnedBattler->SetActorLabel(NewName.ToString());
 				}
-				TArray<UBattleAction*> BattlerAction;
-				for (UBattleAction* Action : BattlerAction)
-				{
-					Action->SetBattle(this);
-				}
 				BattlerGroup.Add(SpawnedBattler);
 			}
 		}
@@ -91,21 +86,21 @@ void ATurnBasedBattle::GetTargetsAllPossible(UBattleAction*& Action, bool bUpdat
 {
 	TArray<ABattleCharacter*> Targets;
 	bool bRemoveDead = true;
-	int32 ViewIndex = 0;
 	ETargetType TargetType = Action->GetTargetType();
+	ECameraView NewView;
 	switch (TargetType)
 	{
 	case ETargetType::Ally:
-		ViewIndex = 1;
+		NewView = ECameraView::Allies;
 		Targets = Allies;
 		if (!Action->GetIfIncludeSelf())
 		{
-			Allies.Remove(Action->GetOwner());
+			Targets.Remove(Action->GetOwner());
 		}
 		break;
 	case ETargetType::DeadAlly:
 		Targets = Allies;
-		ViewIndex = 1;
+		NewView = ECameraView::Allies;
 		bRemoveDead = false;
 		for (ABattleCharacter* Ally : Targets)
 		{
@@ -116,21 +111,20 @@ void ATurnBasedBattle::GetTargetsAllPossible(UBattleAction*& Action, bool bUpdat
 		}
 		break;
 	case ETargetType::Enemy:
-		ViewIndex = 2;
+		NewView = ECameraView::Enemies;
 		Targets = Enemies;
 		break;
 	case ETargetType::Self:
-		ViewIndex = 3;
+		NewView = ECameraView::Self;
 		Targets = Action->GetOwnerAsArray();
 		break;
 	default:
-		ViewIndex = 0;
+		NewView = ECameraView::AllBattlers;
 		break;
 	}
 	Action->SetTarget(Targets, bRemoveDead);
 	if (bUpdateCameraView)
 	{
-		ECameraView NewView = StaticCast<ECameraView>(ViewIndex);
 		ChangeCameraView(NewView, Action->GetOwner(), BattlerBlendTime);
 	}
 }
@@ -171,9 +165,7 @@ void ATurnBasedBattle::LoadTurnActions(TArray<ABattleCharacter*> Battlers, bool 
 		{
 			if (bIsAlly)
 			{
-				UBattleInputAction* InputAction = NewObject<UBattleInputAction>(Battler, UBattleInputAction::StaticClass());
-				InputAction->SetWidget(TurnBattleWidget);
-				InputAction->SetBattle(this);
+				UBattleInputAction* InputAction = NewObject<UBattleInputAction>(Battler, InputActionClass);
 				InputAction->SetOwner(Battler);
 				AddTurnAction(InputAction, true);
 			}
@@ -194,6 +186,7 @@ void ATurnBasedBattle::AddTurnAction(UBattleAction* Action, bool bIgnoreSpeed)
 {
 	if (!Action) return;
 	Action->GetOwner()->GetBattlerParameters()->ReceiveManaConsume(Action->GetActionCost());
+	Action->SetBattle(this);
 	if (bIgnoreSpeed)
 	{
 		Actions.Add(Action);
@@ -202,7 +195,7 @@ void ATurnBasedBattle::AddTurnAction(UBattleAction* Action, bool bIgnoreSpeed)
 	int32 InsertIndex = 0;
 	for (; InsertIndex < Actions.Num(); ++InsertIndex)
 	{
-		if (Action->GetActionSpeed() >= Actions[InsertIndex]->GetActionSpeed())
+		if (Action->GetActionSpeed() > Actions[InsertIndex]->GetActionSpeed())
 		{
 			break;
 		}

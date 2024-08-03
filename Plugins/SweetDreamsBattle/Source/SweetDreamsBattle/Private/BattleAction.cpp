@@ -1,7 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "BattleAction.h"
-#include "Kismet/KismetSystemLibrary.h"
+#include "BattleCharacter.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/World.h"
 #include "TurnBasedBattle.h"
 
@@ -12,6 +13,8 @@ void UBattleAction::StartAction(bool bUseCooldown)
 	{
 		RefreshCooldown();
 	}
+	if (!Owner) return;
+	OwnerTransform = GetOwner()->GetTransform();
 }
 
 void UBattleAction::StartActionForced(bool bUseCooldown)
@@ -41,15 +44,13 @@ void UBattleAction::StartActionForced(bool bUseCooldown)
 
 void UBattleAction::RefreshCooldown()
 {
-	if (Owner)
+	if (!Owner) return;
+	bIsOnCooldown = true;
+	TurnsPassed = 0;
+	if (!bTurnBasedAction)
 	{
-		bIsOnCooldown = true;
-		TurnsPassed = 0;
-		if (!bTurnBasedAction)
-		{
 
-			Owner->GetWorldTimerManager().SetTimer(ActionCooldown, this, &UBattleAction::UpdateCooldown, Cooldown, false);
-		}
+		Owner->GetWorldTimerManager().SetTimer(ActionCooldown, this, &UBattleAction::UpdateCooldown, Cooldown, false);
 	}
 }
 
@@ -79,15 +80,13 @@ float UBattleAction::GetPriorityWeight() const
 
 void UBattleAction::UpdateTimer(float Delay)
 {
-	if (Owner)
+	if (!Owner) return;
+	float TotalTimer = Delay;
+	if (Owner->GetWorldTimerManager().TimerExists(ActionTimer))
 	{
-		float TotalTimer = Delay;
-		if (Owner->GetWorldTimerManager().TimerExists(ActionTimer))
-		{
-			TotalTimer += Owner->GetWorldTimerManager().GetTimerElapsed(ActionTimer);
-		}
-		Owner->GetWorldTimerManager().SetTimer(ActionTimer, this, &UBattleAction::OnActionEnd, TotalTimer, false);
+		TotalTimer += Owner->GetWorldTimerManager().GetTimerElapsed(ActionTimer);
 	}
+	Owner->GetWorldTimerManager().SetTimer(ActionTimer, this, &UBattleAction::OnActionEnd, TotalTimer, false);
 }
 
 void UBattleAction::EndAction(float Delay)
@@ -173,4 +172,36 @@ float UBattleAction::StartAnimation(UAnimSequence* Animation, TArray<ABattleChar
 	float AnimationTime = Super::StartAnimation(Animation, Targets);
 	UpdateTimer(AnimationTime);
 	return AnimationTime;
+}
+
+void UBattleAction::MoveToTarget(ABattleCharacter* Target)
+{
+	if (!Owner || !Target) return;
+	FVector StartLocation = OwnerTransform.GetLocation();
+	FVector EndLocation = Target->GetActorLocation();
+	float Distance = FVector::Dist(StartLocation, EndLocation);
+	float Speed = GetOwner()->GetCharacterMovement()->MaxWalkSpeed;
+	float Time = 0.0f;
+	if (Speed > 0.0f) Time = Distance / Speed;
+	UpdateTimer(Time);
+	GetOwner()->MoveToLocation(EndLocation);
+}
+
+void UBattleAction::ReturnToPosition()
+{
+	if (!Owner) return;
+	GetOwner()->MoveToLocation(OwnerTransform.GetLocation());
+}
+
+void UBattleAction::PlayLevelSequence(ULevelSequence* Sequence)
+{
+	if (!Sequence || !CurrentBattle) return;
+	ALevelSequenceActor* OutActor;
+	ULevelSequencePlayer* SequencePlayer = ULevelSequencePlayer::CreateLevelSequencePlayer(GetWorld(), Sequence, FMovieSceneSequencePlaybackSettings(), OutActor);
+	if (SequencePlayer)
+	{
+		SequencePlayer->Play();
+		float Time = SequencePlayer->GetDuration().AsSeconds();
+		UpdateTimer(Time);
+	}
 }

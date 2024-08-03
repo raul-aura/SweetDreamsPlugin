@@ -4,6 +4,18 @@
 #include "BattleState.h"
 #include "BattleCharacter.h"
 
+ABattleCharacter* UBattleState::GetStateInstigator() const
+{
+	return StateInstigator;
+}
+
+TArray<ABattleCharacter*> UBattleState::GetInstigatorAsArray() const
+{
+	TArray<ABattleCharacter*> ArrayInstigator;
+	ArrayInstigator.Add(GetStateInstigator());
+	return ArrayInstigator;
+}
+
 void UBattleState::ApplyState(ABattleCharacter* Instigator)
 {
 	if (!Instigator) return;

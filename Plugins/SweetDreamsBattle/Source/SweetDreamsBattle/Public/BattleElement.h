@@ -47,6 +47,8 @@ public:
 	virtual void SetTarget(TArray<ABattleCharacter*> NewTargets, bool bRemoveDead = true);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Element")
 	virtual void SetTargetRandom(TArray<ABattleCharacter*> PossibleTargets, int32 TargetAmount, bool bRemoveDead = true);
+	UFUNCTION(BlueprintPure, Category = "Sweet Dreams|RPG|Element")
+	virtual TArray<ABattleCharacter*> GetAdjacentTargets(ABattleCharacter* PrimaryTarget, TArray<ABattleCharacter*> TargetsToSearch);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Element")
 	virtual bool UpdateValidTargets();
 	//
@@ -83,5 +85,6 @@ protected:
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Sweet Dreams|RPG|Element")
 	TArray<ABattleCharacter*> ElementTargets;
 	//
-	virtual bool AreTargetsValid(TArray<ABattleCharacter*>& Targets);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Element", meta = (ExpandBoolAsExecs = "ReturnValue"))
+	virtual bool AreTargetsValid(UPARAM(ref) TArray<ABattleCharacter*>& Targets);
 };

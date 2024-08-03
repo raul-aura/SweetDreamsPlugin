@@ -11,11 +11,14 @@ ABattleCharacter::ABattleCharacter()
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 300.0f; 
+	CameraBoom->TargetArmLength = 275.0f;
+	CameraBoom->SocketOffset = FVector(0.0f, 125.0f, -20.0f);
 	CameraBoom->bUsePawnControlRotation = true; 
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); 
+	Camera->SetFieldOfView(80.0f);
+	Camera->SetRelativeRotation(FRotator(0.0f, 5.0f, -5.0f));
 	Camera->bUsePawnControlRotation = false; 
 
 	BattlerParams = CreateDefaultSubobject<UBattlerDataComponent>(TEXT("Battler Parameters"));

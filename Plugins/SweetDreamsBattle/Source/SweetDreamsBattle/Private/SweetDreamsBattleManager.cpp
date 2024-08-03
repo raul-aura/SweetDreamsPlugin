@@ -20,7 +20,6 @@ ASweetDreamsBattleManager::ASweetDreamsBattleManager()
 
 void ASweetDreamsBattleManager::BeginPlay()
 {
-	Super::BeginPlay();
 	Player = UGameplayStatics::GetPlayerController(this, 0);
 	if (UWorld* World = GetWorld())
 	{
@@ -31,6 +30,7 @@ void ASweetDreamsBattleManager::BeginPlay()
 		BattleWidget->SetVisibility(ESlateVisibility::Collapsed);
 		BattleWidget->AddToViewport();
 	}
+	Super::BeginPlay();
 }
 
 void ASweetDreamsBattleManager::Tick(float DeltaTime)
@@ -86,6 +86,7 @@ void ASweetDreamsBattleManager::EndBattle(FName State, float BlendTime)
 
 bool ASweetDreamsBattleManager::EvaluateEndBattle_Implementation()
 { 
+	if (!bIsBattleActive) return false;
 	bool bAllEnemiesDead = true;
 	bool bAllAlliesDead = true;
 	if (Enemies.Num() > 0)
@@ -149,14 +150,13 @@ void ASweetDreamsBattleManager::ChangeCameraFocus(AActor* NewFocus, float BlendT
 void ASweetDreamsBattleManager::ChangeCameraView(ECameraView NewView, AActor* SelfFocus, float BlendTime)
 {
 	int32 Index = static_cast<int32>(NewView);
-	if (!SelfFocus)
+	if (NewView == ECameraView::Self)
 	{
-		SelfFocus = this;
-	}
-	if (!(NewView == ECameraView::Self))
-	{
-		SelfFocus = this;
 		Index = 1;
+	}
+	else if ((NewView != ECameraView::Self) || !SelfFocus)
+	{
+		SelfFocus = this;
 	}
 	ChangeCameraFocus(SelfFocus, BlendTime);
 	UMulticameraComponent* Multicamera = SelfFocus->FindComponentByClass<UMulticameraComponent>();
@@ -164,5 +164,19 @@ void ASweetDreamsBattleManager::ChangeCameraView(ECameraView NewView, AActor* Se
 	{
 		Multicamera->SetNewCameraView(Index, BlendTime);
 	}
+}
+
+void ASweetDreamsBattleManager::AddDamageToBattle(ABattleCharacter* DamageOwner, float Damage)
+{
+	float* DamageType;
+	if (Enemies.Find(DamageOwner) != INDEX_NONE)
+	{
+		DamageType = &EnemyDamage;
+	}
+	else
+	{
+		DamageType = &AllyDamage;
+	}
+	*DamageType += Damage;
 }
 

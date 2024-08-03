@@ -33,14 +33,31 @@ class USweetDreamsBPLibrary : public UBlueprintFunctionLibrary
 
 public:
 
+	// DEBUG
 	UFUNCTION(BlueprintCallable, meta = (WorldContext = "DreamOrigin", Keywords = "Print SweetDreams core dream debug string text", CallableWithoutWorldContext), Category = "SweetDreams|Core|DEBUG")
-	static void PrintDream(UObject* DreamOrigin, FString Dream = "Hello dream.", EPrintType Severity = EPrintType::INFO, float duration = 4.0f);
-	
-	UFUNCTION(meta = (WorldContext = "WorldContextObject", CallableWithoutWorldContext))
-	static USweetDreamsCore* GetSweetDreamsCore(const UObject* WorldContextObject);
-
-	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject", CallableWithoutWorldContext))
-	static ASweetDreamsGameMode* GetSweetDreamsGameMode(const UObject* WorldContextObject);
-
-	static USweetDreamsCore* CoreLib;
+	static void PrintDream(const UObject* DreamOrigin, FString Dream = "Hello dream.", EPrintType Severity = EPrintType::INFO, float duration = 4.0f);
+	// GETTERS
+	UFUNCTION(meta = (WorldContext = "WorldContext", CallableWithoutWorldContext))
+	static USweetDreamsCore* GetSweetDreamsCore(const UObject* WorldContext);
+	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContext", CallableWithoutWorldContext))
+	static ASweetDreamsGameMode* GetSweetDreamsGameMode(const UObject* WorldContext);
+	// SAVE
+	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContext", CallableWithoutWorldContext))
+	static bool CreateSaveGame(const UObject* WorldContext, TSubclassOf<USweetDreamsSaveFile> SaveClass, bool bIsPersistent = true);
+	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContext", CallableWithoutWorldContext))
+	static bool SaveGame(const UObject* WorldContext, USweetDreamsSaveFile* SaveObject, bool bIsPersistent = true);
+	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContext", CallableWithoutWorldContext))
+	static USweetDreamsSaveFile* LoadSaveGame(const UObject* WorldContext, bool bIsPersistent = true);
+	UFUNCTION(BlueprintPure, meta = (WorldContext = "WorldContext", CallableWithoutWorldContext))
+	static USweetDreamsSavePersistent* GetPersistentSave(const UObject* WorldContext);
+	UFUNCTION(BlueprintPure, meta = (WorldContext = "WorldContext", CallableWithoutWorldContext))
+	static USweetDreamsSaveLocal* GetLocalSave(const UObject* WorldContext);
+	// SETTINGS
+	UFUNCTION(BlueprintPure, meta = (WorldContext = "WorldContext", CallableWithoutWorldContext))
+	static FDreamUserSettings GetUserSettings(const UObject* WorldContext);
+	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContext", CallableWithoutWorldContext))
+	static void SetUserSettings(const UObject* WorldContext, FDreamUserSettings Settings);
+	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContext", CallableWithoutWorldContext))
+	static void SetSettingsQuality(const UObject* WorldContext, int32 Quality);
+	static USweetDreamsCore* SweetDreamsCore;
 };

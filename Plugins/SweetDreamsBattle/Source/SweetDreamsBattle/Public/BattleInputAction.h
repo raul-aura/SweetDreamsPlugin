@@ -8,7 +8,7 @@
 
 class UTurnBasedBattleWidget;
 
-UCLASS(NotBlueprintable)
+UCLASS()
 class SWEETDREAMSBATTLE_API UBattleInputAction : public UBattleAction
 {
 	GENERATED_BODY()
@@ -17,10 +17,13 @@ public:
 	UBattleInputAction();
 
 	virtual void StartAction(bool bUseCooldown) override;
-	UFUNCTION()
-	virtual void SetWidget(UTurnBasedBattleWidget* Widget);
+	UFUNCTION(BlueprintCallable)
+	virtual bool LoadWidget();
 
 protected:
-	UPROPERTY()
-	UTurnBasedBattleWidget* TurnBattleWidget;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	TSubclassOf<UUserWidget> InputWidgetClass;
+
+	UPROPERTY(BlueprintReadWrite)
+	UUserWidget* InputWidget;
 };

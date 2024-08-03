@@ -61,7 +61,7 @@ protected:
 
 	// FUNCTIONS
 	UFUNCTION(BlueprintCallable)
-	virtual float GetModifiers(TArray<float> Modifiers, float Parameter = 100.0f, float BaseMultiplier = 100.0f) const;
+	virtual float GetModifiedParameter(TArray<float> Modifiers, float Parameter = 100.0f, float BaseMultiplier = 100.0f) const;
 
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -100,14 +100,14 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual float ReceiveManaRestore(float Restore);
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void GetMitigatedDamage(float& Mitigated);
-	virtual void GetMitigatedDamage_Implementation(float& Mitigated);
+	void GetMitigatedDamage(float& Mitigated); // NO EVENTS ANYMORE, MOVE TO CHARACTER
+	virtual void GetMitigatedDamage_Implementation(float& Mitigated); // NO EVENTS ANYMORE, MOVE TO CHARACTER
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void Kill();
-	virtual void Kill_Implementation();
+	void Kill(); // NO EVENTS ANYMORE, MOVE TO CHARACTER
+	virtual void Kill_Implementation(); // NO EVENTS ANYMORE, MOVE TO CHARACTER
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void Revive();
-	virtual void Revive_Implementation();
+	void Revive(); // NO EVENTS ANYMORE, MOVE TO CHARACTER
+	virtual void Revive_Implementation(); // NO EVENTS ANYMORE, MOVE TO CHARACTER
 	UFUNCTION(BlueprintCallable)
 	virtual bool IsDead() const;
 };

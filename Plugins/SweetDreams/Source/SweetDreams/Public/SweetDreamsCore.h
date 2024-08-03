@@ -8,6 +8,7 @@
 #include "SweetDreamsSettings.h"
 #include "Editor/EditorEngine.h"
 #include "Engine/Engine.h"
+#include "GameFramework/GameUserSettings.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "SweetDreamsCore.generated.h"
 
@@ -60,6 +61,44 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, SaveGame)
 	bool bEnableGodMode = true;
+
+	FDreamUserSettings() {}
+	FDreamUserSettings(int32 GeneralQuality)
+		: GQuality(GeneralQuality),
+		GViewDistance(GeneralQuality),
+		GAntiAliasing(GeneralQuality),
+		GPostProcessing(GeneralQuality),
+		GShadows(GeneralQuality),
+		GTextures(GeneralQuality),
+		GEffects(GeneralQuality)
+	{}
+
+	void ApplySettings()
+	{
+		UGameUserSettings* UserSettings = GEngine->GetGameUserSettings();
+		if (UserSettings)
+		{
+			UserSettings->SetScreenResolution(CurrentResolution);
+
+			UserSettings->SetOverallScalabilityLevel(GQuality);
+			UserSettings->SetViewDistanceQuality(GViewDistance);
+			UserSettings->SetAntiAliasingQuality(GAntiAliasing);
+			UserSettings->SetPostProcessingQuality(GPostProcessing);
+			UserSettings->SetShadowQuality(GShadows);
+			UserSettings->SetTextureQuality(GTextures);
+			UserSettings->SetVisualEffectQuality(GEffects);
+			UserSettings->SetVSyncEnabled(bEnableVsync);
+			if (bShowFps)
+			{
+				// Implement logic to show FPS, if applicable
+			}
+			if (bEnableGodMode)
+			{
+				// Implement logic to enable god mode
+			}
+			UserSettings->ApplySettings(false);
+		}
+	}
 };
 
 UCLASS(Category = "SweetDreams|Core")
@@ -74,9 +113,10 @@ public:
 	void LoadSettings();
 
 	// DEBUG
-	void PrintDream(UObject* DreamOrigin, FString Dream, EPrintType Severity = EPrintType::INFO, float duration = 4.0f); //Prints to screen, message log and output log.
+	void PrintDream(const UObject* DreamOrigin, FString Dream, EPrintType Severity = EPrintType::INFO, float duration = 4.0f);
 
 	// SETTINGS
+	UPROPERTY(BlueprintReadOnly)
 	const USweetDreamsSettings* CoreSettings;
 	void SetUserSettings(FDreamUserSettings Settings);
 	FDreamUserSettings GetUserSettings() const;
@@ -84,19 +124,22 @@ public:
 	// SAVE
 	bool CreateSave(TSubclassOf<USweetDreamsSaveFile> SaveClass, bool bIsPersistent = true);
 	bool Save(USweetDreamsSaveFile* SaveObject, bool bIsPersistent = true);
-	UFUNCTION(BlueprintCallable)
 	USweetDreamsSaveFile* LoadSave(bool bIsPersistent = true);
 	void ManageSaveData(bool isSaving = true, bool bIsPersistent = true);
+	UPROPERTY()
 	USweetDreamsSavePersistent* SavePersistentRef = nullptr;
+	UPROPERTY()
 	USweetDreamsSaveLocal* SaveLocalRef = nullptr;
 
 protected:
 	// SETTINGS
-	UPROPERTY(SaveGame)
+	UPROPERTY()
 	FDreamUserSettings UserSettings;
 
 	// SAVE
+	UPROPERTY()
 	TSubclassOf<USweetDreamsSavePersistent> SaveClassPersistent = nullptr;
+	UPROPERTY()
 	TSubclassOf<USweetDreamsSaveLocal> SaveClassLocal = nullptr;
 	FString SaveSlotPersistent = "SweetDream_PERSISTENT";
 	FString SaveSlotLocal = "SweetDream_LOCAL";

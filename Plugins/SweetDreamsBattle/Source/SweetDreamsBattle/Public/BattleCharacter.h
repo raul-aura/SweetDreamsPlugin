@@ -48,12 +48,11 @@ protected:
 public:	
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	
+	// DATA
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual FText GetCharacterName() const;
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual void SetCharacterName(FText NewName);
-	// DATA
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual UBattlerDataComponent* GetBattlerParameters() const;
 	// ACTION
@@ -74,4 +73,7 @@ public:
 	virtual int32 RemoveAllStates();
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual TArray<UBattleState*> GetAllStates() const;
+	// MOVEMENT
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
+	void MoveToLocation(FVector Location);
 };

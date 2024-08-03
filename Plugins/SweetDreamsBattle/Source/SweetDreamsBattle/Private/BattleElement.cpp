@@ -3,6 +3,7 @@
 
 #include "BattleElement.h"
 #include "BattleCharacter.h"
+#include "SweetDreamsBattleManager.h"
 #include "BattlerDataComponent.h"
 
 void UBattleElement::SetOwner(ABattleCharacter* InputOwner)
@@ -88,6 +89,25 @@ void UBattleElement::SetTargetRandom(TArray<ABattleCharacter*> PossibleTargets, 
 	}
 }
 
+TArray<ABattleCharacter*> UBattleElement::GetAdjacentTargets(ABattleCharacter* PrimaryTarget, TArray<ABattleCharacter*> TargetsToSearch)
+{
+	TArray<ABattleCharacter*> FoundTargets;
+	if (!AreTargetsValid(TargetsToSearch)) return FoundTargets;
+	int32 FoundIndex = TargetsToSearch.Find(PrimaryTarget);
+	if (FoundIndex != INDEX_NONE)
+	{
+		if (TargetsToSearch.IsValidIndex(FoundIndex - 1))
+		{
+			FoundTargets.Add(TargetsToSearch[FoundIndex - 1]);
+		}
+		if (TargetsToSearch.IsValidIndex(FoundIndex + 1))
+		{
+			FoundTargets.Add(TargetsToSearch[FoundIndex + 1]);
+		}
+	}
+	return FoundTargets;
+}
+
 bool UBattleElement::UpdateValidTargets()
 {
 	if (ElementTargets.Num() == 0) return false;
@@ -121,6 +141,7 @@ bool UBattleElement::DamageTargets(TArray<ABattleCharacter*> Targets, float& Pos
 					continue;
 				}
 				PostMitigatedDamage = Data->ReceiveDamage(Damage, bCanBeMitigated);
+				CurrentBattle->AddDamageToBattle(GetOwner(), PostMitigatedDamage);
 				if (!Data->IsDead())
 				{
 					bAllDead = false;

@@ -2,26 +2,36 @@
 
 
 #include "BattleInputAction.h"
+#include "UMG/Public/Blueprint/WidgetBlueprintLibrary.h"
 #include "TurnBasedBattleWidget.h"
 
 UBattleInputAction::UBattleInputAction()
 {
 	ElementName = FText::FromString(TEXT("Input"));
 	bOverrideOwnerSpeed = true;
-	bTurnBasedAction = true;
 	ActionSpeed = 999;
 	Cost = 0;
 }
 
 void UBattleInputAction::StartAction(bool bUseCooldown)
 {
-	if (TurnBattleWidget)
-	{
-		TurnBattleWidget->ShowPlayerInput();
-	}
+	if (!InputWidgetClass) return;
+	if (!LoadWidget()) return;
+	Super::StartAction(false);
 }
 
-void UBattleInputAction::SetWidget(UTurnBasedBattleWidget* Widget)
+bool UBattleInputAction::LoadWidget()
 {
-	TurnBattleWidget = Widget;
+	TArray<UUserWidget*> AllWidgets;
+	UWidgetBlueprintLibrary::GetAllWidgetsOfClass(this, AllWidgets, InputWidgetClass, true);
+	if (AllWidgets.Num() > 0)
+	{
+		UUserWidget* LoadedWidget = AllWidgets[0];
+		if (LoadedWidget)
+		{
+			InputWidget = LoadedWidget;
+			return true;
+		}
+	}
+	return false;
 }

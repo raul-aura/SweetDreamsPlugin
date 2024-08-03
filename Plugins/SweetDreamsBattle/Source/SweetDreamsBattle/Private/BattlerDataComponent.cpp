@@ -21,12 +21,12 @@ void UBattlerDataComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 
 }
 
-float UBattlerDataComponent::GetModifiers(TArray<float> Modifiers, float Parameter, float BaseMultiplier) const
+float UBattlerDataComponent::GetModifiedParameter(TArray<float> Modifiers, float Parameter, float BaseMultiplier) const
 {
-	if (BaseMultiplier < 0 || Parameter < 0) return 0.0f;
+	if (BaseMultiplier < 0.0f || Parameter < 0.0f) return 0.0f;
 	float MultipliedParam = Parameter * (BaseMultiplier / 100);
 	Modifiers.Add(MultipliedParam);
-	float AllModifiers = 0;
+	float AllModifiers = 0.0f;
 	for (float Modifier : Modifiers)
 	{
 		AllModifiers += Modifier;
@@ -42,7 +42,7 @@ ABattleCharacter* UBattlerDataComponent::GetBattlerOwner() const
 
 float UBattlerDataComponent::GetHealth() const
 {
-	return CurrentHealth + GetModifiers(HealthModifiers, CurrentHealth, HealthMultiplier);
+	return GetModifiedParameter(HealthModifiers, CurrentHealth, HealthMultiplier);
 }
 
 float UBattlerDataComponent::GetMana() const
@@ -52,12 +52,12 @@ float UBattlerDataComponent::GetMana() const
 
 float UBattlerDataComponent::GetForce() const
 {
-	return Force + GetModifiers(ForceModifiers, Force, ForceMultiplier);
+	return GetModifiedParameter(ForceModifiers, Force, ForceMultiplier);
 }
 
 float UBattlerDataComponent::GetResistence() const
 {
-	return Resistence + GetModifiers(ResistenceModifiers, Resistence, ResistenceMultiplier);
+	return GetModifiedParameter(ResistenceModifiers, Resistence, ResistenceMultiplier);
 }
 
 int32 UBattlerDataComponent::GetSpeed() const

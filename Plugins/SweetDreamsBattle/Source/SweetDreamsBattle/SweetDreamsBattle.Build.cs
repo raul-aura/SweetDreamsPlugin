@@ -28,6 +28,8 @@ public class SweetDreamsBattle : ModuleRules
 				"Core",
 				"UMG",
 				"SweetDreams",
+				"LevelSequence",
+				"MovieScene",
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
