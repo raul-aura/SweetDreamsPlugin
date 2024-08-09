@@ -71,13 +71,19 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Turn Battle Manager")
 	virtual void GetTargetsAllPossible(UPARAM(ref) UBattleAction*& Action, bool bUpdateCameraView = false);
 
-	// NEW TURN-BASED COMBAT
+	// TURNS
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Turn Battle Manager")
 	virtual void StartTurn();
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Turn Battle Manager")
 	virtual void LoadTurnActions(TArray<ABattleCharacter*> Characters, bool bIsAlly);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Turn Battle Manager")
 	virtual void AddTurnAction(UBattleAction* Action, bool bIgnoreSpeed = false);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Turn Battle Manager", meta = (ReturnDisplayName = "Found and Removed"))
+	virtual bool RemoveTurnAction(UBattleAction* Action);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Turn Battle Manager")
 	virtual void StartTurnAction();
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Sweet Dreams|RPG|Turn Battle Manager")
+	void OnActionAdded(UBattleAction* Action);
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Sweet Dreams|RPG|Turn Battle Manager")
+	void OnActionRemoved(UBattleAction* Action);
 };

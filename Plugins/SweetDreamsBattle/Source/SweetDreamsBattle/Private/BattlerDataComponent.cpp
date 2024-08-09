@@ -2,6 +2,7 @@
 
 
 #include "BattlerDataComponent.h"
+#include "BattleCharacter.h"
 
 UBattlerDataComponent::UBattlerDataComponent()
 {
@@ -127,7 +128,7 @@ float UBattlerDataComponent::ReceiveDamage(float Damage, bool bCanBeMitigated)
 	float FinalDamage = Damage;
 	if (bCanBeMitigated)
 	{
-		GetMitigatedDamage(FinalDamage);
+		FinalDamage = GetBattlerOwner()->OnDamageReceived(FinalDamage, bCanBeMitigated);
 	}
 	CurrentHealth = FMath::Clamp(CurrentHealth - FinalDamage, 0.0f, Health);
 	if (CurrentHealth <= 0)
@@ -159,23 +160,19 @@ float UBattlerDataComponent::ReceiveManaRestore(float Restore)
 	return 0.0f;
 }
 
-void UBattlerDataComponent::GetMitigatedDamage_Implementation(float& Mitigated)
-{
-	Mitigated -= GetResistence();
-	Mitigated = FMath::Max(Mitigated, 0.0f);
-}
-
-void UBattlerDataComponent::Kill_Implementation()
+void UBattlerDataComponent::Kill()
 {
 	bIsDead = true;
+	GetBattlerOwner()->OnKilled();
 }
 
-void UBattlerDataComponent::Revive_Implementation()
+void UBattlerDataComponent::Revive()
 {
 	if (IsDead())
 	{
 		bIsDead = false;
 	}
+	GetBattlerOwner()->OnRevived();
 }
 
 bool UBattlerDataComponent::IsDead() const

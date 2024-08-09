@@ -7,7 +7,6 @@
 #include "SweetDreamsSaveFile.h"
 #include "SweetDreamsSaveInterface.generated.h"
 
-// This class does not need to be modified.
 UINTERFACE(MinimalAPI, Blueprintable)
 class USweetDreamsSaveInterface : public UInterface
 {

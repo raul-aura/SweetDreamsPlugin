@@ -21,6 +21,14 @@
 			"SupportedTargetPlatforms": [
 				"Win64"
 			]
+		},
+		{
+			"Name": "SweetDreamsBattle",
+			"Enabled": true
+		},
+		{
+			"Name": "SweetDreams",
+			"Enabled": true
 		}
 	]
 }

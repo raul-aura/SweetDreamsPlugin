@@ -18,7 +18,7 @@
 		{
 			"Name": "SweetDreams",
 			"Type": "Runtime",
-			"LoadingPhase": "PreLoadingScreen"
+			"LoadingPhase": "PreDefault"
 		}
 	]
 }

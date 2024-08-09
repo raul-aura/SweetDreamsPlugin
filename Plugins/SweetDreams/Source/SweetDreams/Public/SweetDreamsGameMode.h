@@ -17,6 +17,8 @@ class SWEETDREAMS_API ASweetDreamsGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 	
+	ASweetDreamsGameMode();
+
 public:
 	virtual void BeginPlay() override;
 

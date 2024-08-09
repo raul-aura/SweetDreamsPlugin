@@ -99,15 +99,10 @@ public:
 	virtual float ReceiveManaConsume(float Consume);
 	UFUNCTION(BlueprintCallable)
 	virtual float ReceiveManaRestore(float Restore);
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void GetMitigatedDamage(float& Mitigated); // NO EVENTS ANYMORE, MOVE TO CHARACTER
-	virtual void GetMitigatedDamage_Implementation(float& Mitigated); // NO EVENTS ANYMORE, MOVE TO CHARACTER
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void Kill(); // NO EVENTS ANYMORE, MOVE TO CHARACTER
-	virtual void Kill_Implementation(); // NO EVENTS ANYMORE, MOVE TO CHARACTER
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void Revive(); // NO EVENTS ANYMORE, MOVE TO CHARACTER
-	virtual void Revive_Implementation(); // NO EVENTS ANYMORE, MOVE TO CHARACTER
+	UFUNCTION(BlueprintCallable)
+	void Kill();
+	UFUNCTION(BlueprintCallable)
+	void Revive(); 
 	UFUNCTION(BlueprintCallable)
 	virtual bool IsDead() const;
 };

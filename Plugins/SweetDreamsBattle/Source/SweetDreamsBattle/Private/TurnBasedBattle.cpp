@@ -190,6 +190,7 @@ void ATurnBasedBattle::AddTurnAction(UBattleAction* Action, bool bIgnoreSpeed)
 	if (bIgnoreSpeed)
 	{
 		Actions.Add(Action);
+		OnActionAdded(Action);
 		return;
 	}
 	int32 InsertIndex = 0;
@@ -201,6 +202,19 @@ void ATurnBasedBattle::AddTurnAction(UBattleAction* Action, bool bIgnoreSpeed)
 		}
 	}
 	Actions.Insert(Action, InsertIndex);
+	OnActionAdded(Action);
+}
+
+bool ATurnBasedBattle::RemoveTurnAction(UBattleAction* Action)
+{
+	if (!Action) return false;
+	if (Actions.Find(Action) != INDEX_NONE)
+	{
+		Actions.Remove(Action);
+		OnActionRemoved(Action);
+		return true;
+	}
+	return false;
 }
 
 void ATurnBasedBattle::StartTurnAction()

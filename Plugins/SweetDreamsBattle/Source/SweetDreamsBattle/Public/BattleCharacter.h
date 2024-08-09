@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SweetDreamsCharacter.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "BattlerDataComponent.h"
@@ -12,7 +13,7 @@
 #include "BattleCharacter.generated.h"
 
 UCLASS()
-class SWEETDREAMSBATTLE_API ABattleCharacter : public ACharacter
+class SWEETDREAMSBATTLE_API ABattleCharacter : public  ASweetDreamsCharacter
 {
 	GENERATED_BODY()
 
@@ -23,14 +24,8 @@ protected:
 	virtual void BeginPlay() override;
 
 	// COMPONENTS
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Components")
-	USpringArmComponent* CameraBoom;
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Components")
-	UCameraComponent* Camera;
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Components", meta = (DisplayName = "Battler Parameters"))
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Components", meta = (DisplayName = "Battler Parameters"))
 	UBattlerDataComponent* BattlerParams;
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Components")
-	UMulticameraComponent* MulticameraComponent;
 
 	// CHARACTER
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Character")
@@ -47,7 +42,6 @@ protected:
 
 public:	
 	virtual void Tick(float DeltaTime) override;
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	// DATA
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual FText GetCharacterName() const;
@@ -55,6 +49,14 @@ public:
 	virtual void SetCharacterName(FText NewName);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual UBattlerDataComponent* GetBattlerParameters() const;
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	float OnDamageReceived(float Damage, bool bIsDamageMitigated);
+	float OnDamageReceived_Implementation(float Damage, bool bIsDamageMitigated);
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void OnKilled();
+	void OnKilled_Implementation();
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void OnRevived();
 	// ACTION
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual UBattleAction* GetRandomAction() const;

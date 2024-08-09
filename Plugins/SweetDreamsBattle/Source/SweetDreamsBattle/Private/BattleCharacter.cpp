@@ -9,23 +9,10 @@ ABattleCharacter::ABattleCharacter()
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 275.0f;
-	CameraBoom->SocketOffset = FVector(0.0f, 125.0f, -20.0f);
-	CameraBoom->bUsePawnControlRotation = true; 
-
-	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	Camera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); 
-	Camera->SetFieldOfView(80.0f);
 	Camera->SetRelativeRotation(FRotator(0.0f, 5.0f, -5.0f));
-	Camera->bUsePawnControlRotation = false; 
 
 	BattlerParams = CreateDefaultSubobject<UBattlerDataComponent>(TEXT("Battler Parameters"));
 	AddOwnedComponent(BattlerParams);
-
-	MulticameraComponent = CreateDefaultSubobject<UMulticameraComponent>(TEXT("Multicamera Component"));
-	AddOwnedComponent(MulticameraComponent);
 }
 
 void ABattleCharacter::BeginPlay()
@@ -68,12 +55,6 @@ void ABattleCharacter::Tick(float DeltaTime)
 	}
 }
 
-void ABattleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-}
-
 FText ABattleCharacter::GetCharacterName() const
 {
 	return CharacterName;
@@ -91,6 +72,20 @@ void ABattleCharacter::SetCharacterName(FText NewName)
 UBattlerDataComponent* ABattleCharacter::GetBattlerParameters() const
 {
 	return BattlerParams;
+}
+
+float ABattleCharacter::OnDamageReceived_Implementation(float Damage, bool bIsDamageMitigated)
+{
+	if (bIsDamageMitigated)
+	{
+		Damage -= GetBattlerParameters()->GetResistence();
+	}
+	return Damage;
+}
+
+void ABattleCharacter::OnKilled_Implementation()
+{
+	ResetActions();
 }
 
 UBattleAction* ABattleCharacter::GetRandomAction() const

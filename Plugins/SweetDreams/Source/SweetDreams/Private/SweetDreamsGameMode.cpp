@@ -3,6 +3,14 @@
 
 #include "SweetDreamsGameMode.h"
 #include "SweetDreamsBPLibrary.h"
+#include "SweetDreamsCharacter.h"
+#include "SweetDreamsPlayerController.h"
+
+ASweetDreamsGameMode::ASweetDreamsGameMode()
+{
+	DefaultPawnClass = ASweetDreamsCharacter::StaticClass();
+	PlayerControllerClass = ASweetDreamsPlayerController::StaticClass();
+}
 
 void ASweetDreamsGameMode::BeginPlay()
 {

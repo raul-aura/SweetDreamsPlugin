@@ -123,6 +123,14 @@ void UBattleAction::ResetAction()
 {
 	TurnsPassed = 0;
 	bIsOnCooldown = false;
+	if (bTurnBasedAction && CurrentBattle)
+	{
+		ATurnBasedBattle* TurnBattle = Cast<ATurnBasedBattle>(CurrentBattle);
+		if (TurnBattle)
+		{
+			TurnBattle->RemoveTurnAction(this);
+		}
+	}
 	CurrentBattle = nullptr;
 	ElementTargets.Empty();
 }

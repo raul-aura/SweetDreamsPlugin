@@ -59,5 +59,6 @@ public:
 	static void SetUserSettings(const UObject* WorldContext, FDreamUserSettings Settings);
 	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContext", CallableWithoutWorldContext))
 	static void SetSettingsQuality(const UObject* WorldContext, int32 Quality);
+
 	static USweetDreamsCore* SweetDreamsCore;
 };
