@@ -3,6 +3,7 @@
 
 #include "TurnBasedBattle.h"
 #include "BattleInputAction.h"
+#include "BattleState.h"
 #include "Kismet/GameplayStatics.h"
 
 ATurnBasedBattle::ATurnBasedBattle()
@@ -20,48 +21,108 @@ void ATurnBasedBattle::BeginPlay()
 	if (BattleWidget)
 	{
 		TurnBattleWidget = Cast<UTurnBasedBattleWidget>(BattleWidget);
-		TurnBattleWidget->SetBattleManager(this);
 	}
 }
 
-void ATurnBasedBattle::StartBattle(FName State, float BlendTime)
+void ATurnBasedBattle::StartBattle(float BlendTime)
 {
-	Super::StartBattle(State, BlendTime);
-	StartTurn();
+	Super::StartBattle(BlendTime);
+	TurnBattleWidget->SetBattleManager(this);
+	GetWorldTimerManager().SetTimer(BattleTimer, this, &ATurnBasedBattle::StartTurn, FirstTurnDelay + BlendTime, false);
+	if (TurnBattleWidget) TurnBattleWidget->OnBattleStarted();
+	if (Player)
+	{
+		FInputModeGameAndUI NewMode;
+		if (TurnBattleWidget) NewMode.SetWidgetToFocus(TurnBattleWidget->TakeWidget());
+		Player->SetInputMode(NewMode);
+		Player->SetShowMouseCursor(true);
+	}
+}
+
+void ATurnBasedBattle::EvaluateTransforms()
+{
+	AllyTransforms.Empty();
+	TArray<USceneComponent*> AllyComponents;
+	AllyRoot->GetChildrenComponents(false, AllyComponents);
+	FVector AllyRootLocation = AllyRoot->GetComponentLocation();
+	AllyComponents.Sort([AllyRootLocation](const USceneComponent& A, const USceneComponent& B)
+		{
+			return FVector::DistSquared(A.GetComponentLocation(), AllyRootLocation) < FVector::DistSquared(B.GetComponentLocation(), AllyRootLocation);
+		});
+	for (USceneComponent* Component : AllyComponents)
+	{
+		FTransform LocalTransform = Component->GetRelativeTransform();
+		AllyTransforms.Add(LocalTransform);
+	}
+	EnemyTransforms.Empty();
+	TArray<USceneComponent*> EnemyComponents;
+	EnemyRoot->GetChildrenComponents(false, EnemyComponents);
+	FVector EnemyRootLocation = EnemyRoot->GetComponentLocation();
+	EnemyComponents.Sort([EnemyRootLocation](const USceneComponent& A, const USceneComponent& B)
+		{
+			return FVector::DistSquared(A.GetComponentLocation(), EnemyRootLocation) < FVector::DistSquared(B.GetComponentLocation(), EnemyRootLocation);
+		});
+	for (USceneComponent* Component : EnemyComponents)
+	{
+		FTransform LocalTransform = Component->GetRelativeTransform();
+		EnemyTransforms.Add(LocalTransform);
+	}
+	TArray<USceneComponent*> AllComponents;
+	AllComponents.Append(AllyComponents);
+	AllComponents.Append(EnemyComponents);
+	for (USceneComponent* Component : AllComponents)
+	{
+		Component->SetHiddenInGame(true, false);
+	}
 }
 
 void ATurnBasedBattle::LoadBattlers_Implementation()
 {
-	LoadSpawnBattlers(EnemyClasses, Enemies, EnemyTransforms);
-	LoadSpawnBattlers(AllyClasses, Allies, AllyTransforms);
+	LoadSpawnBattlers(EnemyClasses, Enemies, EnemyRoot, EnemyTransforms);
+	LoadSpawnBattlers(AllyClasses, Allies, AllyRoot, AllyTransforms);
+	Super::LoadBattlers_Implementation();
 }
 
-void ATurnBasedBattle::LoadSpawnBattlers(TArray<TSoftClassPtr<ABattleCharacter>> Battlers, TArray<ABattleCharacter*>& BattlerGroup, TArray<FTransform> TransformGroup)
+bool ATurnBasedBattle::EvaluateEndBattle_Implementation()
 {
-	if (Battlers.Num() == 0)
+	if (MaxTurns > 0 && CurrentTurn >= MaxTurns)
 	{
-		return;
+		bIsVictorious = bVictoryWhenMaxTurns;
+		EndBattle();
+		return true;
 	}
-	for (int32 i = 0; i < Battlers.Num(); i++)
+	return Super::EvaluateEndBattle_Implementation();
+}
+
+void ATurnBasedBattle::LoadSpawnBattlers(TArray<TSoftClassPtr<ABattleCharacter>> Battlers, TArray<ABattleCharacter*>& BattlerGroup, USceneComponent* BattlerRoot, TArray<FTransform> TransformGroup)
+{
+	int32 Length = FMath::Min(Battlers.Num(), TransformGroup.Num());
+	if (Length <= 0) return;
+	for (int32 Index = 0; Index < Length; Index++)
 	{
-		TSubclassOf<ABattleCharacter> LoadedBattler = Battlers[i].LoadSynchronous();
+		TSubclassOf<ABattleCharacter> LoadedBattler = Battlers[Index].LoadSynchronous();
 		if (LoadedBattler)
 		{
-			ABattleCharacter* SpawnedBattler = GetWorld()->SpawnActor<ABattleCharacter>(LoadedBattler, TransformGroup[i]);
+			ABattleCharacter* SpawnedBattler = GetWorld()->SpawnActor<ABattleCharacter>(LoadedBattler);
 			if (SpawnedBattler)
 			{
+				SpawnedBattler->AttachToComponent(BattlerRoot, FAttachmentTransformRules::KeepWorldTransform);
+				if (TransformGroup.IsValidIndex(Index))
+				{
+					SpawnedBattler->SetActorRelativeTransform(TransformGroup[Index]);
+				}
+				SpawnedBattler->GetDreamController()->SetOrigin(SpawnedBattler);
 				FText NewName = SpawnedBattler->GetCharacterName();
-				FString IndexLetter = FString::Chr('A' + i);
-				FText IndexText = FText::FromString(IndexLetter);
-				FText CombinedText = FText::Format(FText::FromString("{0} {1}"), NewName, IndexText);
+				SpawnedBattler->SetIsInBatte(true);
 				if (BattlerGroup == Enemies)
 				{
-					SpawnedBattler->SetActorLabel(CombinedText.ToString());
-					SpawnedBattler->SetCharacterName(CombinedText);
-				}
-				else
-				{
-					SpawnedBattler->SetActorLabel(NewName.ToString());
+					if (IsNameEqual(BattlerGroup, NewName))
+					{
+						FString IndexLetter = FString::Chr('A' + Index);
+						FText IndexText = FText::FromString(IndexLetter);
+						FText CombinedText = FText::Format(FText::FromString("{0} {1}"), NewName, IndexText);
+						SpawnedBattler->SetCharacterName(CombinedText);
+					}
 				}
 				BattlerGroup.Add(SpawnedBattler);
 			}
@@ -75,6 +136,94 @@ void ATurnBasedBattle::LoadSpawnBattlers(TArray<TSoftClassPtr<ABattleCharacter>>
 	{
 		AllBattlers.Append(Enemies);
 	}
+}
+
+bool ATurnBasedBattle::IsNameEqual(const TArray<ABattleCharacter*>& BattlerGroup, const FText& NameToCheck)
+{
+	FString OriginalName = NameToCheck.ToString();
+	if (OriginalName.Len() > 2 && FChar::IsAlpha(OriginalName.Right(1)[0]) && OriginalName.Right(2).Left(1) == " ")
+	{
+		OriginalName = OriginalName.LeftChop(2);
+	}
+	FText StrippedNameToCheck = FText::FromString(OriginalName);
+	for (ABattleCharacter* Battler : BattlerGroup)
+	{
+		FString ExistingNameString = Battler->GetCharacterName().ToString();
+		if (ExistingNameString.Len() > 2 && FChar::IsAlpha(ExistingNameString.Right(1)[0]) && ExistingNameString.Right(2).Left(1) == " ")
+		{
+			ExistingNameString = ExistingNameString.LeftChop(2);
+		}
+		FText StrippedExistingName = FText::FromString(ExistingNameString);
+		if (StrippedExistingName.EqualTo(StrippedNameToCheck))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+void ATurnBasedBattle::GetAlliesFromArray(TArray<TSoftClassPtr<ABattleCharacter>> NewAllies)
+{
+	if (NewAllies.Num() <= 0) return;
+	AllyClasses = NewAllies;
+}
+
+void ATurnBasedBattle::GetEnemiesFromArray(TArray<TSoftClassPtr<ABattleCharacter>> NewEnemies)
+{
+	if (NewEnemies.Num() <= 0) return;
+	EnemyClasses = NewEnemies;
+}
+
+void ATurnBasedBattle::LoadEnemiesGroup(int32 Index)
+{
+	if (EnemyGroups.IsValidIndex(Index))
+	{
+		FEnemyGroups Group = EnemyGroups[Index];
+		if (Group.EnemyGroup.Num() > 0)
+		{
+			GetEnemiesFromArray(Group.EnemyGroup);
+		}
+	}
+}
+
+TArray<FTransform> ATurnBasedBattle::GetRandomAllyTransforms() const
+{
+	return GetRandomTransforms(Allies, AllyTransforms);
+}
+
+TArray<FTransform> ATurnBasedBattle::GetRandomEnemyTransforms() const
+{
+	return GetRandomTransforms(Enemies, EnemyTransforms);
+}
+
+TArray<FTransform> ATurnBasedBattle::GetRandomTransforms(const TArray<ABattleCharacter*>& BattlerGroup, const TArray<FTransform>& TransformGroup) const
+{
+	float Tolerance = 10.0f;
+	TArray<FTransform> LocalTransform;
+	if (BattlerGroup.Num() <= 0) return LocalTransform;
+	for (const FTransform& Transform : TransformGroup)
+	{
+		bool bIsTransformUsed = false;
+		for (ABattleCharacter* Battler : BattlerGroup)
+		{
+			if (Battler && !Battler->GetBattlerParameters()->IsDead())
+			{
+				FVector Location = Battler->GetActorLocation();
+				FVector TransformLocation = Transform.GetLocation();
+
+				if (FVector::Dist(Location, TransformLocation) <= Tolerance)
+				{
+					bIsTransformUsed = true;
+					break;
+				}
+			}
+		}
+		if (!bIsTransformUsed)
+		{
+			LocalTransform.Add(Transform);
+		}
+	}
+	return LocalTransform;
 }
 
 UTurnBasedBattleWidget* ATurnBasedBattle::GetTurnBattleWidget() const
@@ -123,42 +272,64 @@ void ATurnBasedBattle::GetTargetsAllPossible(UBattleAction*& Action, bool bUpdat
 		break;
 	}
 	Action->SetTarget(Targets, bRemoveDead);
-	if (bUpdateCameraView)
+	if (bUpdateCameraView && bAutoMoveCamera)
 	{
 		ChangeCameraView(NewView, Action->GetOwner(), BattlerBlendTime);
 	}
 }
 
+ATurnBasedBattle* ATurnBasedBattle::FindActiveTurnBattle(const UObject* WorldContext, int32& BattleId)
+{
+	return Cast<ATurnBasedBattle>(ASweetDreamsBattleManager::FindActiveBattle(WorldContext, BattleId));
+}
+
 void ATurnBasedBattle::StartTurn()
 {
 	if (EvaluateEndBattle()) return;
+	CurrentTurn++;
 	for (ABattleCharacter* Battler : AllBattlers)
 	{
-		Battler->UpdateActionsCooldown();
-		TArray<UBattleState*> States = Battler->GetAllStates();
-		if (States.Num() > 0)
+		if (Battler)
 		{
-			for (UBattleState* State : States)
+			Battler->UpdateActionsCooldown();
+			TArray<UBattleState*> States = Battler->GetAllStates();
+			if (States.Num() > 0)
 			{
-				State->ConsumeLifetime(EStateLifetime::Turn);
-				State->OnTurnStart();
+				for (UBattleState* State : States)
+				{
+					State->ConsumeLifetime(EStateLifetime::Turn);
+					State->OnTurnStart(CurrentTurn);
+				}
 			}
 		}
+	}
+	for (UBattleAction* Action : Actions)
+	{
+		Action->ResetSkipAction();
 	}
 	CurrentAction = 0;
 	Actions.Empty();
 	LoadTurnActions(Allies, true);
 	LoadTurnActions(Enemies, false);
 	StartTurnAction();
+	OnTurnStarted(CurrentTurn);
 }
 
 void ATurnBasedBattle::LoadTurnActions(TArray<ABattleCharacter*> Battlers, bool bIsAlly)
 {
 	for (ABattleCharacter* Battler : Battlers)
 	{
-		if (Battler->GetBattlerParameters()->IsDead() || Battler->IsPendingKill())
+		if (!Battler || Battler->GetBattlerParameters()->IsDead() || Battler->IsPendingKill())
 		{
 			continue;
+		}
+		TArray<UBattleAction*> AllActions = Battler->GetAllActions();
+		for (UBattleAction* Action : AllActions)
+		{
+			if (Action && Action->TurnToStart == CurrentTurn)
+			{
+				AddTurnAction(Action);
+			}
 		}
 		int32 ActionsToAdd = 1 + Battler->GetBattlerParameters()->GetAdditionalActions();
 		for (int32 Index = 0; Index < ActionsToAdd; Index++)
@@ -196,6 +367,7 @@ void ATurnBasedBattle::AddTurnAction(UBattleAction* Action, bool bIgnoreSpeed)
 	int32 InsertIndex = 0;
 	for (; InsertIndex < Actions.Num(); ++InsertIndex)
 	{
+		if (Actions[InsertIndex]->bSkipThis) continue;
 		if (Action->GetActionSpeed() > Actions[InsertIndex]->GetActionSpeed())
 		{
 			break;
@@ -210,7 +382,6 @@ bool ATurnBasedBattle::RemoveTurnAction(UBattleAction* Action)
 	if (!Action) return false;
 	if (Actions.Find(Action) != INDEX_NONE)
 	{
-		Actions.Remove(Action);
 		OnActionRemoved(Action);
 		return true;
 	}
@@ -227,22 +398,25 @@ void ATurnBasedBattle::StartTurnAction()
 	}
 	UBattleAction* CurrentActionRef = Actions[CurrentAction++];
 	CurrentActionBattler = CurrentActionRef->GetOwner();
-	ChangeCameraFocus(CurrentActionRef->GetOwner(), BattlerBlendTime);
+	if (bAutoMoveCamera) ChangeCameraFocus(CurrentActionRef->GetOwner(), BattlerBlendTime);
 	FTimerHandle LocalHandle;
 	FTimerDelegate TimerDel;
 	TimerDel.BindUFunction(CurrentActionRef, FName("StartAction"), true);
 	GetWorldTimerManager().SetTimer(LocalHandle, TimerDel, BattlerBlendTime + ActionDelay, false);
 }
 
-void ATurnBasedBattle::EndBattle(FName State, float BlendTime)
+void ATurnBasedBattle::EndBattle(float BlendTime)
 {
 	CurrentAction = 0;
+	CurrentTurn = -1;
+	if (TurnBattleWidget) TurnBattleWidget->OnBattleEnded(bIsVictorious);
 	for (ABattleCharacter* Battler : AllBattlers)
 	{
 		Battler->ResetActions();
+		Battler->SetIsInBatte(false);
 	}
 	Actions.Empty();
-	Super::EndBattle(State, BlendTime);
+	Super::EndBattle(BlendTime);
 }
 
 

@@ -3,6 +3,7 @@
 
 #include "BattleInputAction.h"
 #include "UMG/Public/Blueprint/WidgetBlueprintLibrary.h"
+#include "TurnBasedBattle.h"
 #include "TurnBasedBattleWidget.h"
 
 UBattleInputAction::UBattleInputAction()
@@ -15,22 +16,18 @@ UBattleInputAction::UBattleInputAction()
 
 void UBattleInputAction::StartAction(bool bUseCooldown)
 {
-	if (!InputWidgetClass) return;
 	if (!LoadWidget()) return;
 	Super::StartAction(false);
 }
 
 bool UBattleInputAction::LoadWidget()
 {
-	TArray<UUserWidget*> AllWidgets;
-	UWidgetBlueprintLibrary::GetAllWidgetsOfClass(this, AllWidgets, InputWidgetClass, true);
-	if (AllWidgets.Num() > 0)
+	if (CurrentBattle)
 	{
-		UUserWidget* LoadedWidget = AllWidgets[0];
-		if (LoadedWidget)
+		if (ATurnBasedBattle* TurnBattle = Cast<ATurnBasedBattle>(CurrentBattle))
 		{
-			InputWidget = LoadedWidget;
-			return true;
+			InputWidget = TurnBattle->GetTurnBattleWidget();
+			return (InputWidget != nullptr);
 		}
 	}
 	return false;

@@ -16,6 +16,8 @@ ASweetDreamsBattleManager::ASweetDreamsBattleManager()
 
 	MulticameraComponent = CreateDefaultSubobject<UMulticameraComponent>(TEXT("Multicamera Component"));
 	AddOwnedComponent(MulticameraComponent);
+
+	DamageIndicatorClass = UBattleNumberWidget::StaticClass();
 }
 
 void ASweetDreamsBattleManager::BeginPlay()
@@ -38,19 +40,60 @@ void ASweetDreamsBattleManager::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void ASweetDreamsBattleManager::StartBattle(FName State, float BlendTime)
+void ASweetDreamsBattleManager::StartBattleByIndex(const UObject* WorldContext, int32 Index)
 {
-	if (bIsBattleActive)
+	ASweetDreamsBattleManager* Battle = FindBattleByIndex(WorldContext, Index);
+	if (Battle)
 	{
-		return;
+		Battle->StartBattle();
 	}
+}
+
+ASweetDreamsBattleManager* ASweetDreamsBattleManager::FindBattleByIndex(const UObject* WorldContext, int32 Index)
+{
+	if (!ensureAlwaysMsgf(IsValid(WorldContext), TEXT("World Context was not valid.")) || Index < 0)
+	{
+		return nullptr;
+	}
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(WorldContext, ASweetDreamsBattleManager::StaticClass(), FoundActors);
+	for (AActor* Actor : FoundActors)
+	{
+		ASweetDreamsBattleManager* BattleManager = Cast<ASweetDreamsBattleManager>(Actor);
+		if (BattleManager && BattleManager->BattleIndex == Index)
+		{
+			return BattleManager;
+		}
+	}
+	return nullptr;
+}
+
+ASweetDreamsBattleManager* ASweetDreamsBattleManager::FindActiveBattle(const UObject* WorldContext, int32& BattleId)
+{
+	BattleId = -1;
+	if (!ensureAlwaysMsgf(IsValid(WorldContext), TEXT("World Context was not valid.")))
+	{
+		return nullptr;
+	}
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(WorldContext, ASweetDreamsBattleManager::StaticClass(), FoundActors);
+	for (AActor* Actor : FoundActors)
+	{
+		ASweetDreamsBattleManager* BattleManager = Cast<ASweetDreamsBattleManager>(Actor);
+		if (BattleManager && BattleManager->bIsBattleActive)
+		{
+			BattleId = BattleManager->BattleIndex;
+			return BattleManager;
+		}
+	}
+	return nullptr;
+}
+
+void ASweetDreamsBattleManager::StartBattle(float BlendTime)
+{
+	if (bIsBattleActive) return;
 	LoadBattlers();
 	bIsBattleActive = true;
-	ASweetDreamsGameMode* GameMode = Cast<ASweetDreamsGameMode>(UGameplayStatics::GetGameMode(this));
-	if (GameMode && State != "None")
-	{
-		GameMode->StartState(GameMode->GetStateByName(State));
-	}
 	if (Player)
 	{
 		Player->StopMovement();
@@ -63,16 +106,15 @@ void ASweetDreamsBattleManager::StartBattle(FName State, float BlendTime)
 	OnBattleStart();
 }
 
-void ASweetDreamsBattleManager::LoadBattlers_Implementation() {}
+void ASweetDreamsBattleManager::LoadBattlers_Implementation()
+{
+	EnemyDamage.Init(0.0f, Enemies.Num());
+	AllyDamage.Init(0.0f, Allies.Num());
+}
 
-void ASweetDreamsBattleManager::EndBattle(FName State, float BlendTime)
+void ASweetDreamsBattleManager::EndBattle(float BlendTime)
 {
 	bIsBattleActive = false;
-	ASweetDreamsGameMode* GameMode = Cast<ASweetDreamsGameMode>(UGameplayStatics::GetGameMode(this));
-	if (GameMode && State != "None")
-	{
-		GameMode->StartState(GameMode->GetStateByName(State));
-	}
 	if (APawn* PlayerPawn = Player->GetPawn())
 	{
 		ChangeCameraFocus(PlayerPawn, BlendTime);
@@ -166,17 +208,47 @@ void ASweetDreamsBattleManager::ChangeCameraView(ECameraView NewView, AActor* Se
 	}
 }
 
-void ASweetDreamsBattleManager::AddDamageToBattle(ABattleCharacter* DamageOwner, float Damage)
+void ASweetDreamsBattleManager::AddDamageToBattle(ABattleCharacter* DamageOwner, float Damage, bool bApplyCalculations)
 {
-	float* DamageType;
-	if (Enemies.Find(DamageOwner) != INDEX_NONE)
+	if (!DamageOwner || Damage <= 0.0f) return;
+	int32 Index = Enemies.Find(DamageOwner);
+	if (Index != INDEX_NONE)
 	{
-		DamageType = &EnemyDamage;
+		EnemyDamage[Index] += Damage;
+		OnDamageApplied(DamageOwner, Damage, false, bApplyCalculations);
+		return;
 	}
-	else
+	Index = Allies.Find(DamageOwner);
+	if (Index != INDEX_NONE)
 	{
-		DamageType = &AllyDamage;
+		AllyDamage[Index] += Damage;
 	}
-	*DamageType += Damage;
+	OnDamageApplied(DamageOwner, Damage, true, bApplyCalculations);
+}
+
+float ASweetDreamsBattleManager::GetAllAlliedDamage() const
+{
+	float Damage = 0.f;
+	if (AllyDamage.Num() > 0)
+	{
+		for (float Instance : AllyDamage)
+		{
+			Damage += Instance;
+		}
+	}
+	return Damage;
+}
+
+float ASweetDreamsBattleManager::GetAllEnemyDamage() const
+{
+	float Damage = 0.f;
+	if (EnemyDamage.Num() > 0)
+	{
+		for (float Instance : EnemyDamage)
+		{
+			Damage += Instance;
+		}
+	}
+	return Damage;
 }
 

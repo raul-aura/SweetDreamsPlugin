@@ -23,19 +23,19 @@ public:
 	FText DialogueBody = FText::FromString(TEXT("Hello, I'm Name."));
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	UTexture2D* DialogueImage;
+	UTexture2D* DialogueImage = nullptr;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ClampMin = 0))
-	int CameraID;
+	int32 CameraID = 0;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ClampMin = 0))
+	float CameraBlend = 0.f;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	TArray<FText> DialogueChoices; // maybe make a dictionary with what dialogue go to.
+	USoundBase* DialogueAudio = nullptr;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	USoundBase* DialogueAudio;
+	FSweetDreamsDialogue() {}
 };
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDialogueChangedSignature, FSweetDreamsDialogue, Dialogue, int, DialogueID);
 
 USTRUCT(BlueprintType)
 struct FSweetDreamsDialogueLog
@@ -49,6 +49,12 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FText DialogueBody = FText::FromString(TEXT("Hello, I'm Name."));
+
+	FSweetDreamsDialogueLog() {}
+	FSweetDreamsDialogueLog(FText Name, FText Body)
+		: DialogueName(Name),
+		DialogueBody(Body)
+	{}
 };
 
 UCLASS()
@@ -66,34 +72,82 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION(BlueprintCallable)
-	void StartDialogue(float TransitionDuration = 2.0f, bool bHideCharacter = true);
+	void StartDialogue(float TransitionDuration = 2.0f);
+	UFUNCTION(BlueprintCallable)
+	void UpdateDialogue();
+	UFUNCTION(BlueprintCallable)
+	void EndDialogue();
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	void OnDialogueStarted();
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	void OnDialogueChanged(FSweetDreamsDialogue Dialogue, int32 DialogueID);
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	void OnDialogueEnded();
+	//
+	UFUNCTION(BlueprintPure, meta = (WorldContext = "WorldContext", CallableWithoutWorldContext))
+	static ASweetDreamsDialogueManager* GetActiveDialogue(const UObject* WorldContext);
+	UFUNCTION(BlueprintPure, meta = (WorldContext = "WorldContext", CallableWithoutWorldContext))
+	static ASweetDreamsDialogueManager* FindDialogueByName(const UObject* WorldContext, FName Name);
 
 	UFUNCTION(BlueprintCallable)
-	void EndDialogue(float TransitionDuration = 2.0f);
+	int32 GetCurrentDialogueID() const;
+	UFUNCTION(BlueprintCallable)
+	FSweetDreamsDialogue GetCurrentDialogue() const;
+	UFUNCTION(BlueprintCallable)
+	TArray<FSweetDreamsDialogueLog> GetDialogueLog() const;
+	UFUNCTION(BlueprintCallable)
+	bool GetIsDialogueActive() const;
 
+	// ANIMATED
+	UFUNCTION(BlueprintCallable)
+	void DisplayAnimatedDialogue(const FSweetDreamsDialogue& OriginalDialogue, FSweetDreamsDialogue& UpdatedDialogue);
+	UPROPERTY()
+	FTimerHandle DialogueTimer;
+	UPROPERTY()
+	int32 AnimatedIndex = 0;
+	UPROPERTY()
+	FString OriginalBody;
+	UPROPERTY()
+	FSweetDreamsDialogue AnimatedDialogue;
+	UPROPERTY()
+	FSweetDreamsDialogue UpdatedDialogueInstance;
 	UFUNCTION()
-	int32 GetCurrentDialogue() const;
+	void DisplayNextLetter();
 
-	UPROPERTY(BlueprintAssignable)
-	FOnDialogueChangedSignature OnDialogueChangedDelegate;
-
-	//void OnDialogueChanged(FSweetDreamsDialogue Dialogue, int32 DialogueID);
 protected:
 
-	void ChangeDialogue();
-	void FinishDialogueText();
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	FName DialogueName;
+
+	UFUNCTION(BlueprintCallable)
 	void AddDialogueToLog(int32 DialogueID);
 
-	UPROPERTY(EditAnywhere, Category = "Dialogue")
-	TArray <FSweetDreamsDialogue> Dialogue;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Dialogue")
+	TArray<FSweetDreamsDialogue> Dialogues;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Dialogue")
+	float EndTransitionDuration = 2.0f;
+	UPROPERTY(BlueprintReadWrite)
 	TArray<FSweetDreamsDialogueLog> DialogueLog;
+	UPROPERTY(BlueprintReadOnly)
 	FSweetDreamsDialogue CurrentDialogue;
-	int32 CurrentDialogueID = 0;
-
+	UPROPERTY(BlueprintReadOnly)
+	int32 CurrentDialogueID = -1;
+	UPROPERTY(BlueprintReadOnly)
+	APawn* OriginalPawn;
+	//
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	bool bCanRepeatDialogue = true;
-	bool bCanChangeDialogue = true;
-	bool bCurrentDialogueDone = false;
-
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	bool bPossessThis = true;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	bool bHideCharacter = true;
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsDialogueActive = false;
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsDialogueEnabled = true;
+	//
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Animated Dialogue")
+	float LetterDisplayRate = 0.1f;
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UCameraComponent* CameraComponent;
 	UPROPERTY(VisibleAnywhere, Category = "Components")

@@ -14,11 +14,12 @@ class SWEETDREAMSBATTLE_API UTurnBasedBattleWidget : public UUserWidget
 	GENERATED_BODY()
 	
 public:
-
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
-	void ShowPlayerInput();
-	UFUNCTION(BlueprintCallable)
-	void ShowPlayerInputDelayed(float Delay = 1.0f);
+	void OnBattleStarted();
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void OnBattleEnded(bool bIsVictorious = true);
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void ShowPlayerInput(UBattleInputAction* InputAction);
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void HidePlayerInput();
 
@@ -26,7 +27,6 @@ public:
 	void SetBattleManager(ATurnBasedBattle* Battle);
 
 protected:
-	FTimerHandle InputTimer;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Sweet Dreams RPG")
 	ATurnBasedBattle* BattleManager;

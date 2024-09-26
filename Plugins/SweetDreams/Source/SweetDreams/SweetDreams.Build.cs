@@ -27,6 +27,8 @@ public class SweetDreams : ModuleRules
 			{
 				"Core",
 				"DeveloperSettings",
+                "AIModule",
+				"UMG",
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);

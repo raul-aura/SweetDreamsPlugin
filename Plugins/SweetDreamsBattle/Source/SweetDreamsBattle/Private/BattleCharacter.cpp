@@ -2,6 +2,13 @@
 
 
 #include "BattleCharacter.h"
+#include "Components/BoxComponent.h"
+#include "Components/WidgetComponent.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "SweetDreamsBPLibrary.h"
+#include "BattleNumberWidget.h"
+#include "BattleState.h"
+#include "BattlerParameterWidget.h"
 
 ABattleCharacter::ABattleCharacter()
 {
@@ -9,16 +16,31 @@ ABattleCharacter::ABattleCharacter()
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
-	Camera->SetRelativeRotation(FRotator(0.0f, 5.0f, -5.0f));
+	CameraBoom->bUsePawnControlRotation = false;
+	CameraBoom->bInheritPitch = false;
+	CameraBoom->bInheritYaw = false;
+	CameraBoom->bInheritRoll = false;
 
-	BattlerParams = CreateDefaultSubobject<UBattlerDataComponent>(TEXT("Battler Parameters"));
-	AddOwnedComponent(BattlerParams);
+	BattleWorldArea = CreateDefaultSubobject<UBoxComponent>("Battle World Area");
+	BattleWorldArea->SetupAttachment(RootComponent);
+	ParameterIndicator = CreateDefaultSubobject<UWidgetComponent>("Parameter Indicator");
+	ParameterIndicator->SetupAttachment(RootComponent);
+	ParameterIndicator->SetDrawSize(FVector2D(1000.f));
+	ParameterIndicator->SetTwoSided(true);
+	ParameterIndicator->SetPivot(FVector2D(0.5f));
+
+	ParameterIndicatorClass = UBattlerParameterWidget::StaticClass();
+	DamageIndicatorClass = UBattleNumberWidget::StaticClass();
+
+	GetCharacterMovement()->MaxWalkSpeed = 900.f;
 }
 
 void ABattleCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	CreateActions();
+	ParameterIndicator->SetWidgetClass(ParameterIndicatorClass);
+	if (BattlerParams) IndicateParameter(GetBattlerParameters());
 }
 
 void ABattleCharacter::CreateActions()
@@ -34,10 +56,6 @@ void ABattleCharacter::CreateActions()
 				Action->SetOwner(this);
 				Actions.Add(Action);
 			}
-			else
-			{
-				GEngine->AddOnScreenDebugMessage(-1, 6.0f, FColor::Yellow, "Error creating object Action.");
-			}
 		}
 	}
 }
@@ -50,7 +68,7 @@ void ABattleCharacter::Tick(float DeltaTime)
 		for (UBattleState* State : States)
 		{
 			State->ConsumeLifetime(EStateLifetime::Second);
-			State->OnTick();
+			State->OnOwnerTick(DeltaTime);
 		}
 	}
 }
@@ -62,25 +80,104 @@ FText ABattleCharacter::GetCharacterName() const
 
 void ABattleCharacter::SetCharacterName(FText NewName)
 {
-	if (NewName.EqualTo(FText::FromString(TEXT(""))))
-	{
-		return;
-	}
+	if (NewName.IsEmpty()) return;
 	CharacterName = NewName;
 }
 
 UBattlerDataComponent* ABattleCharacter::GetBattlerParameters() const
 {
-	return BattlerParams;
+	UBattlerDataComponent* BattlerDataComponent = Cast<UBattlerDataComponent>(GetComponentByClass(UBattlerDataComponent::StaticClass()));
+	return BattlerDataComponent;
+}
+
+void ABattleCharacter::SetIsInBatte(bool bNewIsBattle)
+{
+	bIsInBattle = bNewIsBattle;
+}
+
+bool ABattleCharacter::GetIsAbleToAct() const
+{
+	return bIsAbleToAct;
+}
+
+void ABattleCharacter::SetIsAbleToAct(bool bNewAble)
+{
+	bIsAbleToAct = bNewAble;
+}
+
+void ABattleCharacter::OnAttack_Implementation()
+{
+	if (bAttackOnCooldown) return;
+	if (bAttackStopsMovement) bCanMove = false;
+	bIsAttacking = true;
+	bAttackOnCooldown = true;
+	FTimerHandle AttackCooldownTimer;
+	FTimerHandle LocalTimer;
+	GetWorldTimerManager().SetTimer(AttackCooldownTimer, [this] {
+		bAttackOnCooldown = false;
+		if (bAttackStopsMovement) bCanMove = true;
+		}, AttackCooldown, false);
+	GetWorldTimerManager().SetTimer(LocalTimer, [this] {
+		bIsAttacking = false;
+		}, GetWorld()->GetDeltaSeconds(), false);
 }
 
 float ABattleCharacter::OnDamageReceived_Implementation(float Damage, bool bIsDamageMitigated)
 {
+	FTimerHandle AttackTimer;
+	bIsAttacked = true;
+	GetWorldTimerManager().SetTimer(AttackTimer, [this]() {
+		bIsAttacked = false;
+		}, GetWorld()->GetDeltaSeconds(), false);
 	if (bIsDamageMitigated)
 	{
-		Damage -= GetBattlerParameters()->GetResistence();
+		Damage = MitigateDamage(Damage);
 	}
-	return Damage;
+	return FMath::Max(Damage, 0.f);
+}
+
+float ABattleCharacter::MitigateDamage_Implementation(float Damage)
+{
+	return (Damage - GetBattlerParameters()->GetResistence());
+}
+
+void ABattleCharacter::IndicateDamage_Implementation(float Value, bool bIsHealInstead)
+{
+	FVector Origin = BattleWorldArea->GetComponentLocation();
+	FVector Extent = BattleWorldArea->GetUnscaledBoxExtent() - IndicatorPadding;
+	FVector DamageLocation = UKismetMathLibrary::RandomPointInBoundingBox(Origin, Extent);
+	if (!DamageIndicatorClass) return;
+	UWidgetComponent* DamageIndicator = NewObject<UWidgetComponent>(BattleWorldArea, UWidgetComponent::StaticClass());
+	if (DamageIndicator)
+	{
+		DamageIndicator->AttachToComponent(BattleWorldArea, FAttachmentTransformRules::SnapToTargetIncludingScale);
+		DamageIndicator->RegisterComponent();
+		DamageIndicator->SetWidgetSpace(EWidgetSpace::Screen);
+		DamageIndicator->SetDrawSize(FVector2D(1000.f));
+		DamageIndicator->SetTwoSided(true);
+		DamageIndicator->SetWidgetClass(DamageIndicatorClass);
+		DamageIndicator->SetPivot(FVector2D(0.5f));
+		DamageIndicator->SetDrawAtDesiredSize(true);
+		DamageIndicator->SetWorldLocation(DamageLocation);
+		UBattleNumberWidget* DamageWidget = Cast<UBattleNumberWidget>(DamageIndicator->GetWidget());
+		if (DamageWidget)
+		{
+			DamageWidget->OwningWidgetComponent = DamageIndicator;
+			DamageWidget->OwningBattler = this;
+			bIsHealInstead ? DamageWidget->IndicateHeal(Value) : DamageWidget->IndicateDamage(Value);
+		}
+	}
+}
+
+void ABattleCharacter::RemoveDamageIndicator(UWidgetComponent* Component)
+{
+	Component->DestroyComponent();
+}
+
+void ABattleCharacter::IndicateParameter_Implementation(UBattlerDataComponent* BattlerParameters)
+{
+	UBattlerParameterWidget* ParameterWidget = Cast<UBattlerParameterWidget>(ParameterIndicator->GetWidget());
+	if (ParameterWidget) ParameterWidget->UpdateParameters(BattlerParameters);
 }
 
 void ABattleCharacter::OnKilled_Implementation()
@@ -91,7 +188,7 @@ void ABattleCharacter::OnKilled_Implementation()
 UBattleAction* ABattleCharacter::GetRandomAction() const
 {
 	if (Actions.Num() == 0) return nullptr;
-	float TotalWeight = 0.0f;
+	float TotalWeight = 0.f;
 	TArray<float> Weights;
 	for (UBattleAction* Action : Actions)
 	{
@@ -104,7 +201,7 @@ UBattleAction* ABattleCharacter::GetRandomAction() const
 		Weight /= TotalWeight;
 	}
 	int32 RandomNum = FMath::FRand();
-	float AccWeight = 0.0f;
+	float AccWeight = 0.f;
 	for (int32 Index = 0; Index < Weights.Num(); Index++)
 	{
 		AccWeight += Weights[Index];
@@ -139,7 +236,7 @@ void ABattleCharacter::ResetActions()
 	}
 }
 
-void ABattleCharacter::AddState(TSubclassOf<UBattleState> State, ABattleCharacter* StateInstigator)
+void ABattleCharacter::AddState(TSubclassOf<UBattleState> State, UObject* StateInstigator)
 {
 	if (!State || !StateInstigator) return;
 	UBattleState* NewState = nullptr;

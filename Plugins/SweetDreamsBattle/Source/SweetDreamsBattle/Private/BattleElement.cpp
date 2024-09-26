@@ -4,6 +4,8 @@
 #include "BattleElement.h"
 #include "BattleCharacter.h"
 #include "SweetDreamsBattleManager.h"
+#include "Kismet/GameplayStatics.h"
+#include "SweetDreamsBPLibrary.h"
 #include "BattlerDataComponent.h"
 
 void UBattleElement::SetOwner(ABattleCharacter* InputOwner)
@@ -23,19 +25,9 @@ TArray<ABattleCharacter*> UBattleElement::GetOwnerAsArray() const
 	return ArrayOwner;
 }
 
-FText UBattleElement::GetElementName() const
-{
-	return ElementName;
-}
-
-FText UBattleElement::GetElementDescription() const
-{
-	return ElementDescription;
-}
-
 void UBattleElement::UpdateElementDescription(FText NewDescription)
 {
-	if (NewDescription.EqualTo(FText::FromString(TEXT("")))) return;
+	if (NewDescription.IsEmpty()) return;
 	ElementDescription = NewDescription;
 }
 
@@ -115,7 +107,7 @@ bool UBattleElement::UpdateValidTargets()
 	{
 		if (Target)
 		{
-			if (Target->GetBattlerParameters()->IsDead() || Target->IsPendingKill())
+			if (Target->GetBattlerParameters() && Target->GetBattlerParameters()->IsDead() || Target->IsPendingKill())
 			{
 				ElementTargets.Remove(Target);
 			}
@@ -124,7 +116,7 @@ bool UBattleElement::UpdateValidTargets()
 	return ElementTargets.Num() > 0;
 }
 
-bool UBattleElement::DamageTargets(TArray<ABattleCharacter*> Targets, float& PostMitigatedDamage, int32& KilledTargets, float Damage, bool bCanBeMitigated)
+bool UBattleElement::DamageTargets(TArray<ABattleCharacter*> Targets, float& PostMitigatedDamage, int32& KilledTargets, float Damage, bool bCanBeMitigated, bool bApplyCalculations)
 {
 	PostMitigatedDamage = 0.0f;
 	KilledTargets = 0;
@@ -141,7 +133,11 @@ bool UBattleElement::DamageTargets(TArray<ABattleCharacter*> Targets, float& Pos
 					continue;
 				}
 				PostMitigatedDamage = Data->ReceiveDamage(Damage, bCanBeMitigated);
-				CurrentBattle->AddDamageToBattle(GetOwner(), PostMitigatedDamage);
+				int32 Index = 1;
+				if (ASweetDreamsBattleManager* Battle = ASweetDreamsBattleManager::FindActiveBattle(GetOwner(), Index))
+				{
+					Battle->AddDamageToBattle(GetOwner(), PostMitigatedDamage, bApplyCalculations);
+				}
 				if (!Data->IsDead())
 				{
 					bAllDead = false;
@@ -176,9 +172,9 @@ void UBattleElement::HealTargets(TArray<ABattleCharacter*> Targets, float& Heale
 	}
 }
 
-bool UBattleElement::AddStatesToTargets(TArray<TSubclassOf<UBattleState>> States, TArray<ABattleCharacter*> Targets, int32& StatesAdded, float Chance)
+bool UBattleElement::AddStatesToTargets(UObject* StateInstigator, TArray<TSubclassOf<UBattleState>> States, TArray<ABattleCharacter*> Targets, int32& StatesAdded, float Chance)
 {
-	if (!AreTargetsValid(Targets) || States.Num() == 0) return false;
+	if (!AreTargetsValid(Targets) || !StateInstigator || States.Num() == 0) return false;
 	Chance = FMath::Clamp(Chance, 0.0f, 1.0f);
 	float RandomNum = 0.0f;
 	bool bAllStatesApplied = true;
@@ -200,7 +196,7 @@ bool UBattleElement::AddStatesToTargets(TArray<TSubclassOf<UBattleState>> States
 				}
 				for (TSubclassOf<UBattleState> State : States)
 				{
-					Target->AddState(State, GetOwner());
+					Target->AddState(State, StateInstigator);
 					StatesAdded++;
 				}
 			}
@@ -280,7 +276,7 @@ void UBattleElement::KillTargets(TArray<ABattleCharacter*> Targets)
 	}
 }
 
-void UBattleElement::ReviveTargets(TArray<ABattleCharacter*> Targets)
+void UBattleElement::ReviveTargets(TArray<ABattleCharacter*> Targets, float HealthRestore, float ManaRestore)
 {
 	if (!AreTargetsValid(Targets)) return;
 	for (ABattleCharacter* Target : Targets)
@@ -289,7 +285,7 @@ void UBattleElement::ReviveTargets(TArray<ABattleCharacter*> Targets)
 		{
 			if (UBattlerDataComponent* Data = Target->GetBattlerParameters())
 			{
-				Data->Revive();
+				Data->Revive(HealthRestore, ManaRestore);
 			}
 		}
 	}
@@ -297,7 +293,7 @@ void UBattleElement::ReviveTargets(TArray<ABattleCharacter*> Targets)
 
 float UBattleElement::StartAnimation(UAnimSequence* Animation, TArray<ABattleCharacter*> Targets)
 {
-	if (!AreTargetsValid(Targets) || !Animation) return 0.0f;
+	if (!AreTargetsValid(Targets) || !Animation) return 0.f;
 	for (ABattleCharacter* Target : Targets)
 	{
 		if (Target)
@@ -320,7 +316,7 @@ float UBattleElement::StartAnimation(UAnimSequence* Animation, TArray<ABattleCha
 	return Animation->GetPlayLength();
 }
 
-void UBattleElement::ForceAction(TSubclassOf<UBattleAction> Action, TArray<ABattleCharacter*> Targets, bool bUseCooldown)
+void UBattleElement::ForceAction(TSubclassOf<UBattleAction> Action, TArray<ABattleCharacter*> Targets, bool bUseCooldown, int32 Turn)
 {
 	if (!AreTargetsValid(Targets) || !Action) return;
 	for (ABattleCharacter* Target : Targets)
@@ -331,21 +327,13 @@ void UBattleElement::ForceAction(TSubclassOf<UBattleAction> Action, TArray<ABatt
 			if (NewAction)
 			{
 				NewAction->SetOwner(Target);
-				NewAction->StartActionForced(bUseCooldown);
+				NewAction->StartActionForced(bUseCooldown, Turn);
 			}
 		}
 	}
 }
 
-bool UBattleElement::AreTargetsValid(TArray<ABattleCharacter*>& Targets)
+bool UBattleElement::AreTargetsValid(const TArray<ABattleCharacter*>& Targets)
 {
-	if (Targets.Num() == 0)
-	{
-		if (ElementTargets.Num() == 0)
-		{
-			return false;
-		}
-		Targets = ElementTargets;
-	}
-	return true;
+	return (Targets.Num() > 0);
 }

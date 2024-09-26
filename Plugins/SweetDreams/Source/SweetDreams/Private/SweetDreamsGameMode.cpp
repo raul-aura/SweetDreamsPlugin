@@ -4,6 +4,7 @@
 #include "SweetDreamsGameMode.h"
 #include "SweetDreamsBPLibrary.h"
 #include "SweetDreamsCharacter.h"
+#include "SweetDreamsSettings.h"
 #include "SweetDreamsPlayerController.h"
 
 ASweetDreamsGameMode::ASweetDreamsGameMode()
@@ -44,6 +45,7 @@ void ASweetDreamsGameMode::BeginPlay()
 			}
 		}
 	}
+	LoadingWidget = CreateLoadingWidget(LoadingWidgetClass);
 	Super::BeginPlay();
 }
 
@@ -113,3 +115,21 @@ bool ASweetDreamsGameMode::CreateAddState(TSubclassOf<ASweetDreamsState> StateCl
 	}
 	return false;
 }
+
+ULoadingWidget* ASweetDreamsGameMode::CreateLoadingWidget(TSubclassOf<ULoadingWidget> Class)
+{
+	if (!Class) return nullptr;
+	ULoadingWidget* NewWidget = CreateWidget<ULoadingWidget>(GetWorld(), Class);
+	if (NewWidget)
+	{
+		NewWidget->AddToViewport(99);
+		FTimerHandle WidgetRemoveTimer;
+		GetWorld()->GetTimerManager().SetTimer(WidgetRemoveTimer, [NewWidget]()
+			{
+				NewWidget->SetVisibility(ESlateVisibility::Collapsed);
+			}, LoadingDelay, false);
+	}
+	return NewWidget;
+}
+
+

@@ -2,55 +2,63 @@
 
 #include "BattleAction.h"
 #include "BattleCharacter.h"
-#include "GameFramework/CharacterMovementComponent.h"
-#include "Engine/World.h"
 #include "TurnBasedBattle.h"
+#include "BattleState.h"
+#include "SweetDreamsBPLibrary.h"
 
 void UBattleAction::StartAction(bool bUseCooldown)
 {
+	if (!GetOwner() || bSkipThis || GetOwner()->GetBattlerParameters()->IsDead()) return;
 	OnActionStart();
-	if (bUseCooldown)
-	{
-		RefreshCooldown();
-	}
-	if (!Owner) return;
-	OwnerTransform = GetOwner()->GetTransform();
 }
 
-void UBattleAction::StartActionForced(bool bUseCooldown)
+void UBattleAction::StartActionForced(bool bUseCooldown, int32 Turn)
 {
-	if (bTurnBasedAction && CurrentBattle)
+	if (!CurrentBattle)
+	{
+		int32 BattleId = -1;
+		CurrentBattle = ASweetDreamsBattleManager::FindActiveBattle(Owner, BattleId);
+	}
+	if (bTurnBasedAction)
 	{
 		ATurnBasedBattle* TurnBattle = Cast<ATurnBasedBattle>(CurrentBattle);
 		if (TurnBattle)
 		{
-			TurnBattle->AddTurnAction(this, !bAddedLast);
+			if (Turn < 0)
+			{
+				TurnBattle->AddTurnAction(this, !bAddedLast);
+			}
 			if (bUseCooldown)
 			{
 				RefreshCooldown();
 			}
+			TurnToStart = Turn;
+			UBattleAction* ThisAction = this;
+			TurnBattle->GetTargetsAllPossible(ThisAction);
+			SetTargetRandom(ElementTargets, TargetAmount);
+			return;
 		}
-		UBattleAction* ThisAction = this;
-		TurnBattle->GetTargetsAllPossible(ThisAction);
-		SetTargetRandom(ElementTargets, TargetAmount);
-		return;
 	}
-	OnActionStart();
-	if (bUseCooldown)
-	{
-		RefreshCooldown();
-	}
+	StartAction(bUseCooldown);
 }
 
 void UBattleAction::RefreshCooldown()
 {
 	if (!Owner) return;
 	bIsOnCooldown = true;
-	TurnsPassed = 0;
+	TurnsPassed = -1;
 	if (!bTurnBasedAction)
 	{
-
 		Owner->GetWorldTimerManager().SetTimer(ActionCooldown, this, &UBattleAction::UpdateCooldown, Cooldown, false);
+	}
+	else
+	{
+		if (CooldownTurns <= 0)
+		{
+			bIsOnCooldown = false;
+			return;
+		}
+		UpdateCooldown();
 	}
 }
 
@@ -78,15 +86,17 @@ float UBattleAction::GetPriorityWeight() const
 	return PriorityWeigth;
 }
 
-void UBattleAction::UpdateTimer(float Delay)
+void UBattleAction::RemoveSelfBattle()
 {
-	if (!Owner) return;
-	float TotalTimer = Delay;
-	if (Owner->GetWorldTimerManager().TimerExists(ActionTimer))
+	if (bTurnBasedAction && CurrentBattle)
 	{
-		TotalTimer += Owner->GetWorldTimerManager().GetTimerElapsed(ActionTimer);
+		ATurnBasedBattle* TurnBattle = Cast<ATurnBasedBattle>(CurrentBattle);
+		if (TurnBattle)
+		{
+			bSkipThis = true;
+			TurnBattle->RemoveTurnAction(this);
+		}
 	}
-	Owner->GetWorldTimerManager().SetTimer(ActionTimer, this, &UBattleAction::OnActionEnd, TotalTimer, false);
 }
 
 void UBattleAction::EndAction(float Delay)
@@ -96,14 +106,9 @@ void UBattleAction::EndAction(float Delay)
 		Delay = 0.01f;
 	}
 	FTimerHandle LocalTimer;
-	if (bTurnBasedAction && CurrentBattle)
-	{
-		ATurnBasedBattle* TurnBattle = Cast<ATurnBasedBattle>(CurrentBattle);
-		if (TurnBattle && Owner)
-		{
-			Owner->GetWorldTimerManager().SetTimer(LocalTimer, TurnBattle, &ATurnBasedBattle::StartTurnAction, Delay, false);
-		}
-	}
+	Owner->GetWorldTimerManager().SetTimer(LocalTimer, [this](){
+		OnActionEnd();
+	}, Delay, false);
 	if (Owner)
 	{
 		TArray<UBattleState*> States = Owner->GetAllStates();
@@ -112,32 +117,48 @@ void UBattleAction::EndAction(float Delay)
 			for (UBattleState* State : States)
 			{
 				State->ConsumeLifetime(EStateLifetime::Action);
-				State->OnActionEnd();
+				State->OnActionEnd(this);
 			}
 		}
 		Owner->GetWorldTimerManager().ClearTimer(ActionTimer);
 	}
 }
 
-void UBattleAction::ResetAction()
+void UBattleAction::StartNextTurnAction(float Delay)
 {
-	TurnsPassed = 0;
-	bIsOnCooldown = false;
+	FTimerHandle LocalTimer;
 	if (bTurnBasedAction && CurrentBattle)
 	{
 		ATurnBasedBattle* TurnBattle = Cast<ATurnBasedBattle>(CurrentBattle);
-		if (TurnBattle)
+		if (TurnBattle && Owner)
 		{
-			TurnBattle->RemoveTurnAction(this);
+			Owner->GetWorldTimerManager().SetTimer(LocalTimer, [TurnBattle, this]() {
+				RemoveSelfBattle();
+				TurnBattle->StartTurnAction();
+				}, Delay, false);
 		}
 	}
+}
+
+void UBattleAction::ResetAction()
+{
+	ResetSkipAction();
+	TurnsPassed = -1;
+	bIsOnCooldown = false;
+	RemoveSelfBattle();
 	CurrentBattle = nullptr;
 	ElementTargets.Empty();
 }
 
+void UBattleAction::ResetSkipAction()
+{
+	bSkipThis = false;
+}
+
 bool UBattleAction::IsActionAvailable() const
 {
-	float Mana = GetOwner()->GetBattlerParameters()->GetMana();
+	float Temp = 0.f;
+	float Mana = GetOwner()->GetBattlerParameters()->GetMana(Temp);
 	if (Cost > Mana || bIsOnCooldown)
 	{
 		return false;
@@ -178,27 +199,33 @@ float UBattleAction::GetActionCost() const
 float UBattleAction::StartAnimation(UAnimSequence* Animation, TArray<ABattleCharacter*> Targets)
 {
 	float AnimationTime = Super::StartAnimation(Animation, Targets);
-	UpdateTimer(AnimationTime);
+	FTimerHandle AnimationTimer;
+	Owner->GetWorldTimerManager().SetTimer(AnimationTimer, [Animation, this] {
+		OnAnimationComplete(Animation);
+		}, AnimationTime, false);
 	return AnimationTime;
 }
 
-void UBattleAction::MoveToTarget(ABattleCharacter* Target)
+void UBattleAction::MoveToTarget(ABattleCharacter* Target, int32 MovementID)
 {
 	if (!Owner || !Target) return;
-	FVector StartLocation = OwnerTransform.GetLocation();
-	FVector EndLocation = Target->GetActorLocation();
-	float Distance = FVector::Dist(StartLocation, EndLocation);
-	float Speed = GetOwner()->GetCharacterMovement()->MaxWalkSpeed;
-	float Time = 0.0f;
-	if (Speed > 0.0f) Time = Distance / Speed;
-	UpdateTimer(Time);
-	GetOwner()->MoveToLocation(EndLocation);
+	ASweetDreamsController* BattlerController = GetOwner()->GetDreamController();
+	if (BattlerController)
+	{
+		BattlerController->SetCurrentMovementID(MovementID);
+		BattlerController->OnDreamMovementCompleted.AddUniqueDynamic(this, &UBattleAction::OnMovementComplete);
+		BattlerController->MoveToActor(Target);
+	}
 }
 
-void UBattleAction::ReturnToPosition()
+void UBattleAction::ReturnToPosition(float Delay)
 {
 	if (!Owner) return;
-	GetOwner()->MoveToLocation(OwnerTransform.GetLocation());
+	if (Delay <= 0.0f) Delay = GetOwner()->GetWorld()->GetDeltaSeconds();
+	FTimerHandle ReturnTimer;
+	Owner->GetWorldTimerManager().SetTimer(ReturnTimer, [this] {
+		GetOwner()->GetDreamController()->ResetPosition();
+		}, Delay, false);
 }
 
 void UBattleAction::PlayLevelSequence(ULevelSequence* Sequence)
@@ -210,6 +237,9 @@ void UBattleAction::PlayLevelSequence(ULevelSequence* Sequence)
 	{
 		SequencePlayer->Play();
 		float Time = SequencePlayer->GetDuration().AsSeconds();
-		UpdateTimer(Time);
+		FTimerHandle SequenceTimer;
+		Owner->GetWorldTimerManager().SetTimer(SequenceTimer, [Sequence, this]() {
+			OnSequenceComplete(Sequence);
+			}, Time, false);
 	}
 }

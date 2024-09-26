@@ -1,7 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "SweetDreamsDialogueManager.h"
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/Character.h"
 
 ASweetDreamsDialogueManager::ASweetDreamsDialogueManager()
 {
@@ -29,58 +30,170 @@ void ASweetDreamsDialogueManager::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void ASweetDreamsDialogueManager::StartDialogue(float TransitionDuration, bool bHideCharacter)
+void ASweetDreamsDialogueManager::StartDialogue(float TransitionDuration)
 {
-	if (Dialogue.Num() == 0)
+	if (TransitionDuration <= 0.f) TransitionDuration = GetWorld()->GetDeltaSeconds();
+	if (Dialogues.Num() == 0 || !bIsDialogueEnabled || bIsDialogueActive) return;
+	if (bHideCharacter)
 	{
+		if (ACharacter* Character = UGameplayStatics::GetPlayerCharacter(this, 0))
+		{
+			Character->SetActorHiddenInGame(true);
+		}
+	}
+	if (bPossessThis)
+	{
+		if (APlayerController* Player = GetWorld()->GetFirstPlayerController())
+		{
+			OriginalPawn = Player->GetPawn();
+			Player->SetViewTargetWithBlend(this, TransitionDuration);
+		}
+	}
+	bIsDialogueActive = true;
+	UpdateDialogue();
+	OnDialogueStarted();
+}
+
+void ASweetDreamsDialogueManager::UpdateDialogue()
+{
+	if (CurrentDialogueID >= Dialogues.Num() - 1)
+	{
+		EndDialogue();
 		return;
 	}
-	if (bCanChangeDialogue)
+	CurrentDialogueID = FMath::Clamp(++CurrentDialogueID, 0, Dialogues.Num());
+	CurrentDialogue = Dialogues[CurrentDialogueID];
+	AddDialogueToLog(CurrentDialogueID);
+	UGameplayStatics::PlaySound2D(this, CurrentDialogue.DialogueAudio);
+	if (bPossessThis)
 	{
-		if (CurrentDialogueID >= Dialogue.Num())
-		{
-			EndDialogue();
-			return;
-		}
-		ChangeDialogue();
+		MulticameraComponent->SetNewCameraView(CurrentDialogue.CameraID, CurrentDialogue.CameraBlend);
 	}
-	else
-	{
-		FinishDialogueText();
-	}
+	OnDialogueChanged(CurrentDialogue, CurrentDialogueID);
 }
 
-void ASweetDreamsDialogueManager::EndDialogue(float TransitionDuration)
+void ASweetDreamsDialogueManager::EndDialogue()
 {
+	float TransitionDuration = EndTransitionDuration;
+	if (TransitionDuration <= 0.f) TransitionDuration = GetWorld()->GetDeltaSeconds();
+	bIsDialogueActive = false;
+	CurrentDialogue = FSweetDreamsDialogue();
 	DialogueLog.Empty();
-	CurrentDialogueID = 0;
+	CurrentDialogueID = -1;
+	if (bPossessThis)
+	{
+		if (APlayerController* Player = GetWorld()->GetFirstPlayerController())
+		{
+			Player->SetViewTargetWithBlend(OriginalPawn, TransitionDuration);
+		}
+	}
 	if (!bCanRepeatDialogue)
 	{
-		// disable interaction
+		bIsDialogueEnabled = false;
 	}
+	if (bHideCharacter)
+	{
+		if (ACharacter* Character = UGameplayStatics::GetPlayerCharacter(this, 0))
+		{
+			Character->SetActorHiddenInGame(false);
+		}
+	}
+	OnDialogueEnded();
 }
 
-int32 ASweetDreamsDialogueManager::GetCurrentDialogue() const
+ASweetDreamsDialogueManager* ASweetDreamsDialogueManager::GetActiveDialogue(const UObject* WorldContext)
+{
+	if (!ensureAlwaysMsgf(IsValid(WorldContext), TEXT("World Context was not valid.")))
+	{
+		return nullptr;
+	}
+	TArray<AActor*> Dialogues;
+	UGameplayStatics::GetAllActorsOfClass(WorldContext, ASweetDreamsDialogueManager::StaticClass(), Dialogues);
+	for (AActor* Actor : Dialogues)
+	{
+		ASweetDreamsDialogueManager* Dialogue = Cast<ASweetDreamsDialogueManager>(Actor);
+		if (Dialogue && Dialogue->bIsDialogueActive)
+		{
+			return Dialogue;
+		}
+	}
+	return nullptr;
+}
+
+ASweetDreamsDialogueManager* ASweetDreamsDialogueManager::FindDialogueByName(const UObject* WorldContext, FName Name)
+{
+	if (!ensureAlwaysMsgf(IsValid(WorldContext), TEXT("World Context was not valid.")) || Name.IsNone())
+	{
+		return nullptr;
+	}
+	TArray<AActor*> Dialogues;
+	UGameplayStatics::GetAllActorsOfClass(WorldContext, ASweetDreamsDialogueManager::StaticClass(), Dialogues);
+	for (AActor* Actor : Dialogues)
+	{
+		ASweetDreamsDialogueManager* Dialogue = Cast<ASweetDreamsDialogueManager>(Actor);
+		if (Dialogue && Dialogue->DialogueName.IsEqual(Name))
+		{
+			return Dialogue;
+		}
+	}
+	return nullptr;
+}
+
+int32 ASweetDreamsDialogueManager::GetCurrentDialogueID() const
 {
 	return CurrentDialogueID;
 }
 
-void ASweetDreamsDialogueManager::ChangeDialogue()
+FSweetDreamsDialogue ASweetDreamsDialogueManager::GetCurrentDialogue() const
 {
-	CurrentDialogue = Dialogue[CurrentDialogueID];
-	OnDialogueChangedDelegate.Broadcast(CurrentDialogue, GetCurrentDialogue());
+	return CurrentDialogue;
 }
 
-void ASweetDreamsDialogueManager::FinishDialogueText()
+TArray<FSweetDreamsDialogueLog> ASweetDreamsDialogueManager::GetDialogueLog() const
 {
-	// update current dialogue text to be all letters.
-	bCanChangeDialogue = true;
-	AddDialogueToLog(CurrentDialogueID);
-	CurrentDialogueID++;
+	return DialogueLog;
+}
+
+bool ASweetDreamsDialogueManager::GetIsDialogueActive() const
+{
+	return bIsDialogueActive;
 }
 
 void ASweetDreamsDialogueManager::AddDialogueToLog(int32 DialogueID)
 {
-	FText LogText = Dialogue[DialogueID].DialogueBody;
-	FText LogName = Dialogue[DialogueID].DialogueName;
+	FText LogText = Dialogues[DialogueID].DialogueBody;
+	FText LogName = Dialogues[DialogueID].DialogueName;
+	FSweetDreamsDialogueLog NewLog = FSweetDreamsDialogueLog(LogName, LogText);
+	DialogueLog.Add(NewLog);
 }
+
+void ASweetDreamsDialogueManager::DisplayAnimatedDialogue(const FSweetDreamsDialogue& OriginalDialogue, FSweetDreamsDialogue& UpdatedDialogue)
+{
+	OriginalBody = OriginalDialogue.DialogueBody.ToString();
+	if (OriginalBody.IsEmpty()) return;
+	AnimatedIndex = 0;
+	AnimatedDialogue = OriginalDialogue;
+	AnimatedDialogue.DialogueBody = FText::GetEmpty();
+	UpdatedDialogueInstance = AnimatedDialogue;
+	UpdatedDialogue = UpdatedDialogueInstance;
+	GetWorldTimerManager().SetTimer(DialogueTimer, this, &ASweetDreamsDialogueManager::DisplayNextLetter, LetterDisplayRate, true);
+}
+
+void ASweetDreamsDialogueManager::DisplayNextLetter()
+{
+	if (AnimatedIndex < OriginalBody.Len())
+	{
+		FString AnimatedBody = AnimatedDialogue.DialogueBody.ToString();
+		AnimatedBody.AppendChar(OriginalBody[AnimatedIndex]);
+		AnimatedDialogue.DialogueBody = FText::FromString(AnimatedBody);
+		UpdatedDialogueInstance = AnimatedDialogue;
+		AnimatedIndex++;
+	}
+	else
+	{
+		GetWorldTimerManager().ClearTimer(DialogueTimer);
+	}
+}
+
+
+

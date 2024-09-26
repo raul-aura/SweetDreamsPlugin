@@ -3,13 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SweetDreamsSavePersistent.h"
-#include "SweetDreamsSaveLocal.h"
-#include "SweetDreamsSettings.h"
-#include "Editor/EditorEngine.h"
-#include "Engine/Engine.h"
 #include "GameFramework/GameUserSettings.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "LoadingWidget.h"
 #include "SweetDreamsCore.generated.h"
 
 class USweetDreamsSave;
@@ -113,23 +109,36 @@ public:
 	void LoadSettings();
 
 	// DEBUG
+	UFUNCTION()
 	void PrintDream(const UObject* DreamOrigin, FString Dream, EPrintType Severity = EPrintType::INFO, float duration = 4.0f);
 
 	// SETTINGS
 	UPROPERTY(BlueprintReadOnly)
-	const USweetDreamsSettings* CoreSettings;
+	const class USweetDreamsSettings* CoreSettings;
+	UFUNCTION()
 	void SetUserSettings(FDreamUserSettings Settings);
+	UFUNCTION()
 	FDreamUserSettings GetUserSettings() const;
 
 	// SAVE
+	UFUNCTION()
 	bool CreateSave(TSubclassOf<USweetDreamsSaveFile> SaveClass, bool bIsPersistent = true);
+	UFUNCTION()
 	bool Save(USweetDreamsSaveFile* SaveObject, bool bIsPersistent = true);
+	UFUNCTION()
 	USweetDreamsSaveFile* LoadSave(bool bIsPersistent = true);
+	UFUNCTION()
 	void ManageSaveData(bool isSaving = true, bool bIsPersistent = true);
 	UPROPERTY()
-	USweetDreamsSavePersistent* SavePersistentRef = nullptr;
+	class USweetDreamsSavePersistent* SavePersistentRef = nullptr;
 	UPROPERTY()
-	USweetDreamsSaveLocal* SaveLocalRef = nullptr;
+	class USweetDreamsSaveLocal* SaveLocalRef = nullptr;
+
+	// LOADING
+	UFUNCTION()
+	void LoadLevel(TSoftObjectPtr<UWorld> Level);
+	UPROPERTY()
+	TSoftObjectPtr<UWorld> CurrentLoadingLevel;
 
 protected:
 	// SETTINGS
@@ -141,6 +150,8 @@ protected:
 	TSubclassOf<USweetDreamsSavePersistent> SaveClassPersistent = nullptr;
 	UPROPERTY()
 	TSubclassOf<USweetDreamsSaveLocal> SaveClassLocal = nullptr;
+	UPROPERTY()
 	FString SaveSlotPersistent = "SweetDream_PERSISTENT";
+	UPROPERTY()
 	FString SaveSlotLocal = "SweetDream_LOCAL";
 };

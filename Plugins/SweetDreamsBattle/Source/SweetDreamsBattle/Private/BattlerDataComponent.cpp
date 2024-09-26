@@ -7,32 +7,27 @@
 UBattlerDataComponent::UBattlerDataComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	CurrentHealth = Health;
 }
 
 void UBattlerDataComponent::BeginPlay()
 {
+	CurrentHealth = Health;
+	CurrentMana = Mana;
+	CurrentLives = AdditionalLives;
 	Super::BeginPlay();
-}
-
-
-void UBattlerDataComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
 }
 
 float UBattlerDataComponent::GetModifiedParameter(TArray<float> Modifiers, float Parameter, float BaseMultiplier) const
 {
-	if (BaseMultiplier < 0.0f || Parameter < 0.0f) return 0.0f;
+	if (BaseMultiplier < 0.f || Parameter < 0.f) return 0.f;
 	float MultipliedParam = Parameter * (BaseMultiplier / 100);
 	Modifiers.Add(MultipliedParam);
-	float AllModifiers = 0.0f;
+	float AllModifiers = 0.f;
 	for (float Modifier : Modifiers)
 	{
 		AllModifiers += Modifier;
 	}
-	AllModifiers = FMath::Max(AllModifiers, 0.0f);
+	AllModifiers = FMath::Max(AllModifiers, 0.f);
 	return AllModifiers;
 }
 
@@ -41,29 +36,31 @@ ABattleCharacter* UBattlerDataComponent::GetBattlerOwner() const
 	return Cast<ABattleCharacter>(GetOwner());
 }
 
-float UBattlerDataComponent::GetHealth() const
+float UBattlerDataComponent::GetHealth(float& MaxHealth, float Multiplier)
 {
-	return GetModifiedParameter(HealthModifiers, CurrentHealth, HealthMultiplier);
+	MaxHealth = GetModifiedParameter(HealthModifiers, Health, HealthMultiplier) * (Multiplier / 100);
+	return FMath::Min(GetModifiedParameter(HealthModifiers, CurrentHealth, HealthMultiplier) * (Multiplier / 100), MaxHealth);
 }
 
-float UBattlerDataComponent::GetMana() const
+float UBattlerDataComponent::GetMana(float& MaxMana, float Multiplier)
 {
-	return CurrentMana;
+	MaxMana = GetModifiedParameter(ManaModifiers, Mana, ManaMultiplier) * (Multiplier / 100);
+	return FMath::Min(GetModifiedParameter(ManaModifiers, CurrentMana, ManaMultiplier) * (Multiplier / 100), MaxMana);
 }
 
-float UBattlerDataComponent::GetForce() const
+float UBattlerDataComponent::GetForce(float Multiplier) const
 {
-	return GetModifiedParameter(ForceModifiers, Force, ForceMultiplier);
+	return GetModifiedParameter(ForceModifiers, Force, ForceMultiplier) * (Multiplier / 100);
 }
 
-float UBattlerDataComponent::GetResistence() const
+float UBattlerDataComponent::GetResistence(float Multiplier) const
 {
-	return GetModifiedParameter(ResistenceModifiers, Resistence, ResistenceMultiplier);
+	return GetModifiedParameter(ResistenceModifiers, Resistence, ResistenceMultiplier) * (Multiplier / 100);
 }
 
-int32 UBattlerDataComponent::GetSpeed() const
+int32 UBattlerDataComponent::GetSpeed(float Multiplier) const
 {
-	return Speed;
+	return GetModifiedParameter(SpeedModifiers, Speed, SpeedMultiplier) * (Multiplier / 100);
 }
 
 int32 UBattlerDataComponent::GetAdditionalActions() const
@@ -73,13 +70,13 @@ int32 UBattlerDataComponent::GetAdditionalActions() const
 
 int32 UBattlerDataComponent::AddModifier(TArray<float>& Modifiers, float ModifierToAdd)
 {
-	if (ModifierToAdd < 0.0f) return -1;
+	if (ModifierToAdd < 0.f) return -1;
 	return Modifiers.Add(ModifierToAdd);
 }
 
 bool UBattlerDataComponent::UpdateModifier(TArray<float>& Modifiers, float ModifierToSearch, float NewModifier)
 {
-	if (ModifierToSearch < 0.0f || NewModifier < 0.0f) return false;
+	if (ModifierToSearch < 0.f || NewModifier < 0.f) return false;
 	int32 FoundIndex;
 	if (Modifiers.Find(ModifierToSearch, FoundIndex))
 	{
@@ -91,7 +88,7 @@ bool UBattlerDataComponent::UpdateModifier(TArray<float>& Modifiers, float Modif
 
 bool UBattlerDataComponent::UpdateModifierAt(TArray<float>& Modifiers, int32 Index, float NewModifier)
 {
-	if (Index < 0 || NewModifier < 0.0f) return false;
+	if (Index < 0 || NewModifier < 0.f) return false;
 	if (Modifiers.IsValidIndex(Index))
 	{
 		Modifiers[Index] = NewModifier;
@@ -102,7 +99,7 @@ bool UBattlerDataComponent::UpdateModifierAt(TArray<float>& Modifiers, int32 Ind
 
 bool UBattlerDataComponent::RemoveModifier(TArray<float>& Modifiers, float ModifierToRemove)
 {
-	if (ModifierToRemove < 0.0f) return false;
+	if (ModifierToRemove < 0.f) return false;
 	if (Modifiers.Find(ModifierToRemove))
 	{
 		Modifiers.Remove(ModifierToRemove);
@@ -126,12 +123,14 @@ float UBattlerDataComponent::ReceiveDamage(float Damage, bool bCanBeMitigated)
 {
 	if (Damage < 0) Damage *= -1;
 	float FinalDamage = Damage;
-	if (bCanBeMitigated)
-	{
-		FinalDamage = GetBattlerOwner()->OnDamageReceived(FinalDamage, bCanBeMitigated);
-	}
-	CurrentHealth = FMath::Clamp(CurrentHealth - FinalDamage, 0.0f, Health);
-	if (CurrentHealth <= 0)
+	FinalDamage = GetBattlerOwner()->OnDamageReceived(FinalDamage, bCanBeMitigated);
+	GetBattlerOwner()->IndicateDamage(FinalDamage);
+
+	float RemainingDamage = FMath::Max((FinalDamage - CurrentHealth), 0.f);
+	CurrentHealth = FMath::Clamp(CurrentHealth - FinalDamage, 0.f, Health);
+	float LocalMaxHealth;
+	float LocalCurrentHealth = GetHealth(LocalMaxHealth);
+	if (LocalCurrentHealth - RemainingDamage <= 0)
 	{
 		CurrentHealth = 0;
 		Kill();
@@ -142,8 +141,11 @@ float UBattlerDataComponent::ReceiveDamage(float Damage, bool bCanBeMitigated)
 float UBattlerDataComponent::ReceiveHeal(float Heal)
 {
 	if (Heal < 0) Heal *= -1;
-	float HealedAmount = FMath::Clamp(Heal, 0.0f, (Health - CurrentHealth));
+	float LocalMaxHealth;
+	float LocalCurrentHealth = GetHealth(LocalMaxHealth);
+	float HealedAmount = FMath::Clamp(Heal * (HealMultiplier / 100), 0.f, (LocalMaxHealth - LocalCurrentHealth));
 	CurrentHealth += HealedAmount;
+	GetBattlerOwner()->IndicateDamage(HealedAmount, true);
 	return HealedAmount;
 }
 
@@ -151,26 +153,42 @@ float UBattlerDataComponent::ReceiveManaConsume(float Consume)
 {
 	if (Consume < CurrentMana || Consume == 0) return CurrentMana;
 	if (Consume < 0) Consume *= -1;
-	CurrentMana = FMath::Clamp(CurrentMana - Consume, 0.0f, Mana);
+	CurrentMana = FMath::Clamp(CurrentMana - Consume, 0.f, Mana);
 	return CurrentMana;
 }
 
 float UBattlerDataComponent::ReceiveManaRestore(float Restore)
 {
-	return 0.0f;
+	if (Restore < 0) Restore *= -1;
+	float LocalMaxMana;
+	float LocalCurrentMana = GetMana(LocalMaxMana);
+	float RestoredAmount = FMath::Clamp(Restore * (ManaRestoreMultiplier / 100), 0.f, (LocalMaxMana - LocalCurrentMana));
+	CurrentMana += RestoredAmount;
+	return RestoredAmount;
 }
 
 void UBattlerDataComponent::Kill()
 {
 	bIsDead = true;
 	GetBattlerOwner()->OnKilled();
+	if (CurrentLives > 0)
+	{
+		CurrentLives--;
+		FTimerHandle TimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
+			{
+				Revive();
+			}, 0.5f, false);
+	}
 }
 
-void UBattlerDataComponent::Revive()
+void UBattlerDataComponent::Revive(float HealthRestore, float ManaRestore)
 {
 	if (IsDead())
 	{
 		bIsDead = false;
+		CurrentHealth = Health * (HealthRestore / 100);
+		CurrentMana = Mana * (ManaRestore / 100);
 	}
 	GetBattlerOwner()->OnRevived();
 }

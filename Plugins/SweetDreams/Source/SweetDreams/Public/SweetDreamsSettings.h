@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SweetDreamsSavePersistent.h"
+#include "SweetDreamsSaveLocal.h"
 #include "SweetDreamsCore.h"
 #include "SweetDreamsState.h"
 #include "Engine/DeveloperSettings.h"

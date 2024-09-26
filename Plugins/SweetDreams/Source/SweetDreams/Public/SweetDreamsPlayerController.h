@@ -13,9 +13,9 @@ class SWEETDREAMS_API ASweetDreamsPlayerController : public APlayerController
 	GENERATED_BODY()
 	
 public:
-
-	virtual void SetViewTargetWithBlend(class AActor* NewViewTarget, float BlendTime = 0, enum EViewTargetBlendFunction BlendFunc = VTBlend_Linear, float BlendExp = 0, bool bLockOutgoing = false) override;
-
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams")
 	class ASweetDreamsCharacter* GetDreamCharacter() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams")
+	void DisableInputTimer(float Duration = 1.f);
 };

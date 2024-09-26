@@ -32,9 +32,20 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Core|Game Mode", meta = (DisplayName = "Create And Add State", ReturnDisplayName = "Success"))
 	bool CreateAddState(TSubclassOf<ASweetDreamsState> StateClass);
 
+	// LEVEL LOAD
+	UFUNCTION(BlueprintCallable)
+	ULoadingWidget* CreateLoadingWidget(TSubclassOf<ULoadingWidget> Class);
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams Core|Loading")
+	float LoadingDelay = 3.f;
+	UPROPERTY(BlueprintReadOnly)
+	ULoadingWidget* LoadingWidget;
+
 protected:
 	UPROPERTY()
 	USweetDreamsCore* Core = nullptr;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams Core|Loading")
+	TSubclassOf<ULoadingWidget> LoadingWidgetClass;
 
 	// STATE
 	UPROPERTY(BlueprintReadWrite, Category = "States")

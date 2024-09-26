@@ -2,11 +2,9 @@
 
 
 #include "SweetDreamsCharacter.h"
-#include "GameFramework/CharacterMovementComponent.h"
-#include "Camera/CameraComponent.h"
-#include "GameFramework/SpringArmComponent.h"
+#include "SweetDreamsBPLibrary.h"
 #include "Components/CapsuleComponent.h"
-#include "MulticameraComponent.h"
+#include "Kismet/KismetStringLibrary.h"
 
 ASweetDreamsCharacter::ASweetDreamsCharacter()
 {
@@ -22,24 +20,31 @@ ASweetDreamsCharacter::ASweetDreamsCharacter()
 	GetCharacterMovement()->JumpZVelocity = 800.f;
 	GetCharacterMovement()->AirControl = 1.0f;
 
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>("CameraBoom");
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->bUsePawnControlRotation = true;
 
-	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	Camera = CreateDefaultSubobject<UCameraComponent>("Camera");
 	Camera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	Camera->SetFieldOfView(80.0f);
 	Camera->bUsePawnControlRotation = false;
 
 	GetCapsuleComponent()->SetCanEverAffectNavigation(true);
 
-	MulticameraComponent = CreateDefaultSubobject<UMulticameraComponent>(TEXT("Multicamera Component"));
+	MulticameraComponent = CreateDefaultSubobject<UMulticameraComponent>("Multicamera Component");
 	AddOwnedComponent(MulticameraComponent);
+
+	AIControllerClass = ASweetDreamsController::StaticClass();
 }
 
 void ASweetDreamsCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	if (GetDreamController())
+	{
+		GetDreamController()->SetOrigin(this);
+	}
 }
 
 void ASweetDreamsCharacter::Tick(float DeltaTime)
@@ -47,32 +52,73 @@ void ASweetDreamsCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
+ASweetDreamsController* ASweetDreamsCharacter::GetDreamController() const
+{
+	return Cast<ASweetDreamsController>(GetController());
+}
+
 void ASweetDreamsCharacter::MoveForward(float Value)
 {
-	if (!Controller && Value != 0.0f)
+	if (Controller && Value != 0.0f && bCanMove)
 	{
-		FVector Forward = GetActorForwardVector();
-		AddMovementInput(Forward, Value);
+		const FRotator Rotation = Controller->GetControlRotation();
+		const FRotator YawRotation(0, Rotation.Yaw, 0);
+		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		AddMovementInput(Direction, Value);
 	}
 }
 
 void ASweetDreamsCharacter::MoveRight(float Value)
 {
-	if (!Controller && Value != 0.0f)
+	if (Controller && Value != 0.0f && bCanMove)
 	{
-		FVector Right = GetActorRightVector();
-		AddMovementInput(Right, Value);
+		const FRotator Rotation = Controller->GetControlRotation();
+		const FRotator YawRotation(0, Rotation.Yaw, 0);
+		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+		AddMovementInput(Direction, Value);
 	}
+
 }
 
-void ASweetDreamsCharacter::CameraUp(float Value)
+void ASweetDreamsCharacter::Run()
 {
-	AddControllerPitchInput(Value);
+	if (!bCanMove) return;
+	if (MaxRunTime > 0.f)
+	{
+		if (CurrentRunTime >= MaxRunTime) return;
+	}
+	bIsRunning = true;
+	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
+	if (MaxRunTime <= 0.f) return;
+	GetWorldTimerManager().SetTimer(RunTimer, [this]() {
+		CurrentRunTime += GetWorld()->GetDeltaSeconds();
+		if (CurrentRunTime >= MaxRunTime)
+		{
+			StopRunning();
+		}
+		}, GetWorld()->GetDeltaSeconds(), true);
 }
 
-void ASweetDreamsCharacter::CameraRight(float Value)
+void ASweetDreamsCharacter::StopRunning()
 {
-	AddControllerYawInput(Value);
+	bIsRunning = false;
+	CurrentRunTime = 0.f;
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	GetWorldTimerManager().ClearTimer(RunTimer);
+}
+
+void ASweetDreamsCharacter::CameraVertical(float Value, float Sensitivity)
+{
+	if (!bCanMoveCamera) return;
+	if (Sensitivity < 0.f) Sensitivity = 1.f;
+	AddControllerPitchInput(Value * Sensitivity);
+}
+
+void ASweetDreamsCharacter::CameraHorizontal(float Value, float Sensitivity)
+{
+	if (!bCanMoveCamera) return;
+	if (Sensitivity < 0.f) Sensitivity = 1.f;
+	AddControllerYawInput(Value * Sensitivity);
 }
 
 void ASweetDreamsCharacter::EvaluateCameraPerspective()

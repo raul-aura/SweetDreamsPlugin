@@ -18,7 +18,7 @@
 		{
 			"Name": "SweetDreamsBattle",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "PreDefault"
 		}
 	],
 	"Plugins": [

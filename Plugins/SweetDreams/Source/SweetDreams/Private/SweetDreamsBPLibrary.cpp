@@ -2,8 +2,11 @@
 
 #include "SweetDreamsBPLibrary.h"
 #include "SweetDreams.h"
+#include "UMG/Public/Components/PanelWidget.h"
+#include "UMG/Public/Blueprint/UserWidget.h"
 #include "SweetDreamsGameMode.h"
 #include "Kismet/GameplayStatics.h"
+#include "Curves/CurveFloat.h"
 #include "Engine/Engine.h"
 
 USweetDreamsCore* USweetDreamsBPLibrary::SweetDreamsCore = nullptr;
@@ -182,6 +185,81 @@ void USweetDreamsBPLibrary::SetSettingsQuality(const UObject* WorldContext, int3
 			SweetDreamsCore->SetUserSettings(NewSettings);
 		}
 	}
+}
+
+void USweetDreamsBPLibrary::LoadLevel(const UObject* WorldContext, TSoftObjectPtr<UWorld> Level)
+{
+	UWorld* World = GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::ReturnNull);
+	if (!ensureAlwaysMsgf(IsValid(WorldContext), TEXT("World Context was not valid.")))
+	{
+		return;
+	}
+	GetSweetDreamsCore(WorldContext)->LoadLevel(Level);
+}
+
+TSoftObjectPtr<UWorld> USweetDreamsBPLibrary::GetCurrentLoadingLevel(const UObject* WorldContext)
+{
+	UWorld* World = GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::ReturnNull);
+	if (!ensureAlwaysMsgf(IsValid(WorldContext), TEXT("World Context was not valid.")))
+	{
+		return nullptr;
+	}
+	return GetSweetDreamsCore(WorldContext)->CurrentLoadingLevel;
+}
+
+float USweetDreamsBPLibrary::GetLoadingPercentage(TSoftObjectPtr<UObject> Asset)
+{
+	if (Asset.IsNull()) return 100.f;
+	const FName AssetName = FName(Asset.GetLongPackageName());
+	float Percentage = GetAsyncLoadPercentage(AssetName);
+	return (Percentage == -1) ? 100.f : Percentage;
+}
+
+bool USweetDreamsBPLibrary::CalculateChance(float& RandomizedValue, float Chance)
+{
+	Chance = FMath::Clamp(Chance / 100.0f, 0.0f, 1.0f);
+	RandomizedValue = FMath::FRandRange(0.0f, 1.0f); 
+	return RandomizedValue <= Chance;
+}
+
+bool USweetDreamsBPLibrary::CheckInterval(const float& Number, float Interval)
+{
+	float Reminder = FMath::Fmod(Number, Interval);
+	return FMath::IsNearlyZero(Reminder, 0.01f);
+}
+
+void USweetDreamsBPLibrary::ShouldNotHappen(const UObject* WorldContext)
+{
+	PrintDream(WorldContext, "Should NOT happen called.", EPrintType::ERROR, 10.f);
+}
+
+void USweetDreamsBPLibrary::DoSomething(const UObject* WorldContext)
+{
+	PrintDream(WorldContext, "Something has been done.", EPrintType::WARNING, 10.f);
+}
+
+float USweetDreamsBPLibrary::IncrementAlpha(const UObject* WorldContext, float& Alpha, float MaxValue, UCurveFloat* AlphaCurve, bool bStopCondition)
+{
+	UWorld* World = GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::ReturnNull);
+	if (!ensureAlwaysMsgf(IsValid(WorldContext), TEXT("World Context was not valid.")))
+	{
+		return Alpha;
+	}
+	if (MaxValue <= 0.f)
+	{
+		bStopCondition = false;
+	}
+	if (!bStopCondition && Alpha <= MaxValue)
+	{
+		Alpha += World->GetDeltaSeconds();
+		if (AlphaCurve)
+		{
+			float CurveAlpha = AlphaCurve->GetFloatValue(Alpha);
+			return FMath::Clamp(CurveAlpha, 0.0f, MaxValue);
+		}
+		Alpha = FMath::Clamp(Alpha, 0.0f, MaxValue);
+	}
+	return Alpha;
 }
 
 void USweetDreamsBPLibrary::PrintDream(const UObject* DreamOrigin, FString Dream, EPrintType Severity, float Duration)

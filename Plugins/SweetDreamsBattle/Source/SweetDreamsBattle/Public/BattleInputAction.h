@@ -21,9 +21,6 @@ public:
 	virtual bool LoadWidget();
 
 protected:
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	TSubclassOf<UUserWidget> InputWidgetClass;
-
 	UPROPERTY(BlueprintReadWrite)
 	UUserWidget* InputWidget;
 };

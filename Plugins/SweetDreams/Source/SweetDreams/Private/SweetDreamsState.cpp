@@ -12,6 +12,7 @@ void ASweetDreamsState::BeginPlay()
 	{
 		CoreState = World->GetGameInstance()->GetSubsystem<USweetDreamsCore>();
 	}
+	Super::BeginPlay();
 }
 
 void ASweetDreamsState::StartState_Implementation() 

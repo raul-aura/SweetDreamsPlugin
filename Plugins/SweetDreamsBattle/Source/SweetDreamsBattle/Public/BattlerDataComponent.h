@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BattleState.h"
 #include "Components/ActorComponent.h"
 #include "BattlerDataComponent.generated.h"
 
@@ -18,7 +17,6 @@ public:
 	UBattlerDataComponent();
 
 protected:
-	virtual void BeginPlay() override;
 
 	// PARAMS
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Params")
@@ -35,50 +33,67 @@ protected:
 	int32 Speed = 1;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Params", meta = (ClampMin = "0", ClampMax = "99"))
 	int32 AdditionalActions = 0;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Params", meta = (ClampMin = "0", ClampMax = "99"))
+	int32 AdditionalLives = 0;
 	//
 	UPROPERTY(BlueprintReadWrite, Category = "Params")
 	float CurrentHealth;
 	UPROPERTY(BlueprintReadWrite, Category = "Params")
 	float CurrentMana;
 	UPROPERTY(BlueprintReadWrite, Category = "Params")
+	int32 CurrentLives;
+	UPROPERTY(BlueprintReadWrite, Category = "Params")
 	bool bIsDead = false;
 	//
-	TArray<UBattleState*> States;
+	TArray<class UBattleState*> States;
 	// MULTIPLIERS
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Multipliers", meta = (Units = "%", ClampMin = "1"))
 	float HealthMultiplier = 100;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Multipliers", meta = (Units = "%", ClampMin = "1"))
+	float ManaMultiplier = 100;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Multipliers", meta = (Units = "%", ClampMin = "1"))
 	float ForceMultiplier = 100;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Multipliers", meta = (Units = "%", ClampMin = "1"))
 	float ResistenceMultiplier = 100;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Multipliers", meta = (Units = "%", ClampMin = "1"))
+	float SpeedMultiplier = 100;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Multipliers", meta = (Units = "%", ClampMin = "1"))
+	float HealMultiplier = 100;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Multipliers", meta = (Units = "%", ClampMin = "1"))
+	float ManaRestoreMultiplier = 100;
 	// MODIFIERS
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Modifiers")
+	UPROPERTY(BlueprintReadWrite, Category = "Modifiers")
 	TArray<float> HealthModifiers;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Modifiers")
+	UPROPERTY(BlueprintReadWrite, Category = "Modifiers")
+	TArray<float> ManaModifiers;
+	UPROPERTY(BlueprintReadWrite, Category = "Modifiers")
 	TArray<float> ForceModifiers;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Modifiers")
+	UPROPERTY(BlueprintReadWrite, Category = "Modifiers")
 	TArray<float> ResistenceModifiers;
+	UPROPERTY(BlueprintReadWrite, Category = "Modifiers")
+	TArray<float> SpeedModifiers;
+	// add array of floats to updated multipliers
 
 	// FUNCTIONS
 	UFUNCTION(BlueprintCallable)
 	virtual float GetModifiedParameter(TArray<float> Modifiers, float Parameter = 100.0f, float BaseMultiplier = 100.0f) const;
 
 public:	
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-	
+	virtual void BeginPlay() override;
+
 	UFUNCTION(BlueprintCallable)
-	virtual ABattleCharacter* GetBattlerOwner() const;
-	UFUNCTION(BlueprintCallable)
-	virtual float GetHealth() const;
-	UFUNCTION(BlueprintCallable)
-	virtual float GetMana() const;
-	UFUNCTION(BlueprintCallable)
-	virtual float GetForce() const;
-	UFUNCTION(BlueprintCallable)
-	virtual float GetResistence() const;
-	UFUNCTION(BlueprintCallable)
-	virtual int32 GetSpeed() const;
-	UFUNCTION(BlueprintCallable)
+	ABattleCharacter* GetBattlerOwner() const;
+	UFUNCTION(BlueprintPure, meta = (ReturnDisplayName="Current Health"))
+	virtual float GetHealth(float& MaxHealth, float Multiplier = 100.f);
+	UFUNCTION(BlueprintCallable, meta = (ReturnDisplayName = "Current Mana"))
+	virtual float GetMana(float& MaxMana, float Multiplier = 100.f);
+	UFUNCTION(BlueprintCallable, meta = (ReturnDisplayName = "Force"))
+	virtual float GetForce(float Multiplier = 100.f) const;
+	UFUNCTION(BlueprintCallable, meta = (ReturnDisplayName = "Resistence"))
+	virtual float GetResistence(float Multiplier = 100.f) const;
+	UFUNCTION(BlueprintCallable, meta = (ReturnDisplayName = "Speed"))
+	virtual int32 GetSpeed(float Multiplier = 100.f) const;
+	UFUNCTION(BlueprintCallable, meta = (ReturnDisplayName = "Additional Speed"))
 	virtual int32 GetAdditionalActions() const;
 	UFUNCTION(BlueprintCallable, meta = (ReturnDisplayName = "Added to Index"))
 	virtual int32 AddModifier(UPARAM(ref) TArray<float>& Modifiers, float ModifierToAdd = 10.0f);
@@ -102,7 +117,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Kill();
 	UFUNCTION(BlueprintCallable)
-	void Revive(); 
+	void Revive(float HealthRestore = 100.f, float ManaRestore = 100.f); 
 	UFUNCTION(BlueprintCallable)
 	virtual bool IsDead() const;
 };

@@ -4,19 +4,31 @@
 #include "BattleState.h"
 #include "BattleCharacter.h"
 
-ABattleCharacter* UBattleState::GetStateInstigator() const
+UObject* UBattleState::GetStateInstigator() const
 {
 	return StateInstigator;
 }
 
-TArray<ABattleCharacter*> UBattleState::GetInstigatorAsArray() const
+TArray<UObject*> UBattleState::GetInstigatorAsArray() const
 {
-	TArray<ABattleCharacter*> ArrayInstigator;
+	TArray<UObject*> ArrayInstigator;
 	ArrayInstigator.Add(GetStateInstigator());
 	return ArrayInstigator;
 }
 
-void UBattleState::ApplyState(ABattleCharacter* Instigator)
+bool UBattleState::IsTriggerableAction(UBattleAction* Action) const
+{
+	for (TSubclassOf<UBattleAction> ActionClass : TriggerableActions)
+	{
+		if (Action->IsA(ActionClass))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+void UBattleState::ApplyState(UObject* Instigator)
 {
 	if (!Instigator) return;
 	StateInstigator = Instigator;
@@ -29,7 +41,7 @@ void UBattleState::ApplyState(ABattleCharacter* Instigator)
 void UBattleState::ResetLifetime()
 {
 	IntLifetime = 0;
-	FloatLifetime = 0.0f;
+	FloatLifetime = 0.f;
 	switch (Lifetime)
 	{
 	case EStateLifetime::Turn:

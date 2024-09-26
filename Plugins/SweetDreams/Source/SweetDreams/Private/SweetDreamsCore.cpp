@@ -1,8 +1,15 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "SweetDreamsCore.h"
+#include "SweetDreamsSaveInterface.h"
+#include "SweetDreamsSavePersistent.h"
+#include "SweetDreamsSaveLocal.h"
+#include "SweetDreamsGameMode.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/StreamableManager.h"
+#include "SweetDreamsSettings.h"
+#include "SweetDreamsBPLibrary.h"
+#include "Engine/AssetManager.h"
 
 USweetDreamsCore::USweetDreamsCore()
 	:
@@ -81,7 +88,7 @@ void USweetDreamsCore::PrintDream(const UObject* DreamOrigin, FString Dream, EPr
 	UE_LOG(LogCore, Display, TEXT("%s"), *Dream);
 	if (GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, Duration, DreamColor, Dream);
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, Duration, DreamColor, Dream);
 	}
 }
 
@@ -211,4 +218,28 @@ void USweetDreamsCore::ManageSaveData(bool bIsSaving, bool bIsPersistent)
 			SaveObject->OnSaveLoaded(Actors);
 		}
 	}
+}
+
+void USweetDreamsCore::LoadLevel(TSoftObjectPtr<UWorld> Level)
+{
+	if (Level.IsNull()) return;
+	CurrentLoadingLevel = Level;
+	TArray<FSoftObjectPath> AssetList;
+	AssetList.Add(Level.ToSoftObjectPath());
+
+	ASweetDreamsGameMode* DreamGameMode = Cast<ASweetDreamsGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+	if (DreamGameMode && DreamGameMode->LoadingWidget)
+	{
+		DreamGameMode->LoadingWidget->OnStartLoading();
+	}
+
+	FStreamableManager& StreamableManager = UAssetManager::GetStreamableManager();
+	FStreamableDelegate StreamableDelegate;
+	StreamableDelegate.BindLambda([this, DreamGameMode]() {
+		if (DreamGameMode && DreamGameMode->LoadingWidget)
+		{
+			DreamGameMode->LoadingWidget->OnFinishLoading();
+		}
+		});
+	StreamableManager.RequestAsyncLoad(AssetList, StreamableDelegate);
 }

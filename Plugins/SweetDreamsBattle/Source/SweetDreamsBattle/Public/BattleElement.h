@@ -31,10 +31,12 @@ public:
 	virtual ABattleCharacter* GetOwner() const;
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Element")
 	virtual TArray<ABattleCharacter*> GetOwnerAsArray() const;
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Element")
-	virtual FText GetElementName() const;
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Element")
-	virtual FText GetElementDescription() const;
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Sweet Dreams|RPG|Element")
+	FText GetElementName() const;
+	virtual FText GetElementName_Implementation() const { return ElementName; }
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Sweet Dreams|RPG|Element")
+	FText GetElementDescription() const;
+	virtual FText GetElementDescription_Implementation() const { return ElementDescription; }
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Element")
 	virtual void UpdateElementDescription(FText NewDescription);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Element")
@@ -53,38 +55,38 @@ public:
 	virtual bool UpdateValidTargets();
 	//
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Element", meta = (ReturnDisplayName = "All Targets Killed"))
-	virtual bool DamageTargets(TArray<ABattleCharacter*> Targets, float& PostMitigatedDamage, int32& KilledTargets, float Damage = 100.0f, bool bCanBeMitigated = true);
+	bool DamageTargets(TArray<ABattleCharacter*> Targets, float& PostMitigatedDamage, int32& KilledTargets, float Damage = 100.0f, bool bCanBeMitigated = true, bool bApplyCalculations = true);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Element")
-	virtual void HealTargets(TArray<ABattleCharacter*> Targets, float& HealedAmount, float& OverhealAmount, float Heal = 100.0f);
+	void HealTargets(TArray<ABattleCharacter*> Targets, float& HealedAmount, float& OverhealAmount, float Heal = 100.0f);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Element", meta = (ReturnDisplayName = "All States Added"))
-	virtual bool AddStatesToTargets(TArray<TSubclassOf<UBattleState>> States, TArray<ABattleCharacter*> Targets, int32& StatesAdded, float Chance = 1.0f);
+	static bool AddStatesToTargets(UObject* StateInstigator, TArray<TSubclassOf<UBattleState>> States, TArray<ABattleCharacter*> Targets, int32& StatesAdded, float Chance = 1.0f);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Element", meta = (ReturnDisplayName = "All States Removed"))
-	virtual bool RemoveStatesOfTargets(TArray<TSubclassOf<UBattleState>> States, TArray<ABattleCharacter*> Targets, int32& StatesRemoved, float Chance = 1.0f);
+	static bool RemoveStatesOfTargets(TArray<TSubclassOf<UBattleState>> States, TArray<ABattleCharacter*> Targets, int32& StatesRemoved, float Chance = 1.0f);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Element")
-	virtual void CleanseTargets(TArray<ABattleCharacter*> Targets, int32& StatesRemoved);
+	static void CleanseTargets(TArray<ABattleCharacter*> Targets, int32& StatesRemoved);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Element")
-	virtual void KillTargets(TArray<ABattleCharacter*> Targets);
+	static void KillTargets(TArray<ABattleCharacter*> Targets);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Element")
-	virtual void ReviveTargets(TArray<ABattleCharacter*> Targets);
+	static void ReviveTargets(TArray<ABattleCharacter*> Targets, float HealthRestore = 100.f, float ManaRestore = 100.f);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Element", meta = (ReturnDisplayName = "Animation Length"))
 	virtual float StartAnimation(UAnimSequence* Animation, TArray<ABattleCharacter*> Targets);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Element")
-	virtual void ForceAction(TSubclassOf<UBattleAction> Action, TArray<ABattleCharacter*> Targets, bool bUseCooldown = true);
+	virtual void ForceAction(TSubclassOf<UBattleAction> Action, TArray<ABattleCharacter*> Targets, bool bUseCooldown = true, int32 Turn = -1);
 
 protected:
 
 	// ELEMENT
-	UPROPERTY(BlueprintReadOnly, Category = "Sweet Dreams|RPG|Element")
+	UPROPERTY(BlueprintReadOnly, Category = "Battle Element")
 	ABattleCharacter* Owner;
-	UPROPERTY(BlueprintReadOnly, Category = "Sweet Dreams|RPG|Element")
+	UPROPERTY(BlueprintReadOnly, Category = "Battle Element")
 	ASweetDreamsBattleManager* CurrentBattle;
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Sweet Dreams|RPG|Element")
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Battle Element")
 	FText ElementName = FText::FromString(TEXT("Element"));
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Sweet Dreams|RPG|Element", meta = (MultiLine = true))
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Battle Element", meta = (MultiLine = true))
 	FText ElementDescription = FText::FromString(TEXT("Write about your element here..."));
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Sweet Dreams|RPG|Element")
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Battle Element")
 	TArray<ABattleCharacter*> ElementTargets;
 	//
-	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Element", meta = (ExpandBoolAsExecs = "ReturnValue"))
-	virtual bool AreTargetsValid(UPARAM(ref) TArray<ABattleCharacter*>& Targets);
+	UFUNCTION(BlueprintCallable, Category = "Battle Element", meta = (ExpandBoolAsExecs = "ReturnValue"))
+	static bool AreTargetsValid(const TArray<ABattleCharacter*>& Targets);
 };

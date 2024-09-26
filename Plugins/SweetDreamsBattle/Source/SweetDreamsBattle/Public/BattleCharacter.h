@@ -4,12 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "SweetDreamsCharacter.h"
-#include "GameFramework/SpringArmComponent.h"
-#include "Camera/CameraComponent.h"
 #include "BattlerDataComponent.h"
 #include "BattleAction.h"
-#include "SweetDreams/Public/MulticameraComponent.h"
-#include "GameFramework/Character.h"
 #include "BattleCharacter.generated.h"
 
 UCLASS()
@@ -24,6 +20,10 @@ protected:
 	virtual void BeginPlay() override;
 
 	// COMPONENTS
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Components")
+	class UBoxComponent* BattleWorldArea;
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Components")
+	class UWidgetComponent* ParameterIndicator;
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Components", meta = (DisplayName = "Battler Parameters"))
 	UBattlerDataComponent* BattlerParams;
 
@@ -31,6 +31,14 @@ protected:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Character")
 	FText CharacterName = FText::FromString(TEXT("Character"));
 	// BATTLE
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Battle")
+	TSubclassOf<class UBattleNumberWidget> DamageIndicatorClass;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Battle")
+	TSubclassOf<class UBattlerParameterWidget> ParameterIndicatorClass;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Battle", meta = (DisplayName = "Indicator Forward Offset"))
+	float IndicatorOffset = 50.0f;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Battle")
+	float IndicatorPadding = 15.0f;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Battle", meta = (DisplayName = "Actions"))
 	TArray<TSoftClassPtr<UBattleAction>> ActionClasses;
 	UPROPERTY(BlueprintReadWrite, Category = "Battle")
@@ -39,6 +47,21 @@ protected:
 	TArray<UBattleState*> States;
 	UFUNCTION(BlueprintCallable)
 	virtual void CreateActions();
+
+	UPROPERTY(BlueprintReadWrite)
+	bool bIsInBattle = false;
+	UPROPERTY(BlueprintReadWrite)
+	bool bIsAttacked = false;
+	UPROPERTY(BlueprintReadWrite)
+	bool bIsAbleToAct = true;
+	UPROPERTY(BlueprintReadWrite)
+	bool bIsAttacking = false;
+	UPROPERTY(BlueprintReadWrite)
+	bool bAttackOnCooldown = false;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams|RPG|Character")
+	float AttackCooldown = 1.f;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams|RPG|Character")
+	bool bAttackStopsMovement = true;
 
 public:	
 	virtual void Tick(float DeltaTime) override;
@@ -49,9 +72,29 @@ public:
 	virtual void SetCharacterName(FText NewName);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual UBattlerDataComponent* GetBattlerParameters() const;
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
+	void SetIsInBatte(bool bNewIsBattle);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
+	bool GetIsAbleToAct() const;
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
+	void SetIsAbleToAct(bool bNewAble);
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void OnAttack();
+	void OnAttack_Implementation();
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	float OnDamageReceived(float Damage, bool bIsDamageMitigated);
 	float OnDamageReceived_Implementation(float Damage, bool bIsDamageMitigated);
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	float MitigateDamage(float Damage);
+	float MitigateDamage_Implementation(float Damage);
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void IndicateDamage(float Value, bool bIsHealInstead = false);
+	void IndicateDamage_Implementation(float Value, bool bIsHealInstead = false);
+	UFUNCTION(BlueprintCallable)
+	void RemoveDamageIndicator(UWidgetComponent* Component);
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void IndicateParameter(UBattlerDataComponent* BattlerParameters);
+	void IndicateParameter_Implementation(UBattlerDataComponent* BattlerParameters);
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void OnKilled();
 	void OnKilled_Implementation();
@@ -68,14 +111,11 @@ public:
 	virtual void ResetActions();
 	// STATE
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
-	virtual void AddState(TSubclassOf<UBattleState> State, ABattleCharacter* StateInstigator);
+	virtual void AddState(TSubclassOf<UBattleState> State, UObject* StateInstigator);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual void RemoveState(TSubclassOf<UBattleState> State);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual int32 RemoveAllStates();
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
 	virtual TArray<UBattleState*> GetAllStates() const;
-	// MOVEMENT
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Sweet Dreams|RPG|Character")
-	void MoveToLocation(FVector Location);
 };

@@ -4,6 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Camera/CameraComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "MulticameraComponent.h"
+#include "SweetDreamsController.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "SweetDreamsCharacter.generated.h"
 
 UENUM(BlueprintType)
@@ -24,28 +29,54 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Camera)
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = Camera)
 	ECameraPerspective CameraPerspective;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class USpringArmComponent* CameraBoom;
+	USpringArmComponent* CameraBoom;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class UCameraComponent* Camera;
+	UCameraComponent* Camera;
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Components", meta = (AllowPrivateAccess = "true"))
-	class UMulticameraComponent* MulticameraComponent;
+	UMulticameraComponent* MulticameraComponent;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams|Core|Character")
+	float WalkSpeed = 600.f;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams|Core|Character")
+	float RunSpeed = 900.f;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sweet Dreams|Core|Character")
+	float MaxRunTime = 0.f;
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsRunning = false;
+	UPROPERTY(BlueprintReadOnly)
+	bool bCanRun = false;
+	UPROPERTY(BlueprintReadOnly)
+	float CurrentRunTime = 0.f;
+	UPROPERTY(BlueprintReadOnly)
+	FTimerHandle RunTimer;
+
+	UPROPERTY(BlueprintReadWrite)
+	bool bCanMove = true;
+	UPROPERTY(BlueprintReadWrite)
+	bool bCanMoveCamera = true;
 
 public:	
 	virtual void Tick(float DeltaTime) override;
-
+	//
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Core|Character")
+	ASweetDreamsController* GetDreamController() const;
+	//
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Core|Character")
 	void MoveForward(float Value);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Core|Character")
 	void MoveRight(float Value);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Core|Character")
-	void CameraUp(float Value);
+	void Run();
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Core|Character")
-	void CameraRight(float Value);
+	void StopRunning();
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Core|Character")
+	void CameraVertical(float Value, float Sensitivity = 1.0f);
+	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Core|Character")
+	void CameraHorizontal(float Value, float Sensitivity = 1.0f);
 	UFUNCTION(BlueprintCallable, Category = "Sweet Dreams|Core|Character")
 	void EvaluateCameraPerspective();
-
 };
